@@ -1,4 +1,7 @@
 import { program } from 'commander';
+import chalk from 'chalk';
+import { checkDockerConnection } from '../docker/client';
+import { checkK8sConnection } from '../kubernetes/client';
 
 program
   .name('kdm')
@@ -33,10 +36,31 @@ program
     console.log(`Showing logs for ${name}...`);
   });
 
-if (!process.argv.slice(2).length) {
-  console.log(`KDM v1.0\n\nDocker: Connected\nKubernetes: Connected\n\nRunning Containers: 0\nRunning Pods: 0\nUnhealthy Services: 0\n\nCommands:\n\nkdm show runners\nkdm health all\nkdm watch\nkdm logs <name>\n`);
-  program.outputHelp();
-  process.exit(0);
-}
+const run = async () => {
+  if (!process.argv.slice(2).length) {
+    const [dockerStatus, k8sStatus] = await Promise.all([
+      checkDockerConnection(),
+      checkK8sConnection()
+    ]);
 
-program.parse(process.argv);
+    const dockerStr = dockerStatus.connected ? chalk.green('Connected') : chalk.red('Disconnected');
+    const k8sStr = k8sStatus.connected ? chalk.green('Connected') : chalk.red('Disconnected');
+
+    console.log(chalk.bold.blue('KDM v1.0\n'));
+    console.log(`Docker: ${dockerStr}`);
+    console.log(`Kubernetes: ${k8sStr}\n`);
+    console.log(`Running Containers: ${chalk.yellow(dockerStatus.containerCount)}`);
+    console.log(`Running Pods: ${chalk.yellow(k8sStatus.podCount)}`);
+    console.log(`Unhealthy Services: ${chalk.yellow('0')} (Mocked)\n`);
+    console.log(chalk.bold('Commands:\n'));
+    console.log(`  kdm show runners\n  kdm health all\n  kdm watch\n  kdm logs <name>\n`);
+    
+    program.outputHelp();
+    process.exit(0);
+  }
+
+  program.parse(process.argv);
+};
+
+run();
+
