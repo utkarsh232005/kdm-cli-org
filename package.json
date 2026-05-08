@@ -1,15 +1,30 @@
 {
-  "name": "kdm",
-  "version": "1.0.1-alpha.3",
+  "name": "@utkarsh232005/kdm-cli",
+  "version": "1.0.0",
   "description": "Kubernetes and Docker Monitoring CLI",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/utkarsh232005/KDM-Cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/utkarsh232005/KDM-Cli/issues"
+  },
+  "homepage": "https://github.com/utkarsh232005/KDM-Cli#readme",
   "bin": {
     "kdm": "./bin/kdm.js"
   },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs --dts",
     "dev": "tsup src/index.ts --format cjs --watch",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "kubernetes",
