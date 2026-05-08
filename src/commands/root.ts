@@ -2,6 +2,7 @@ import { program } from 'commander';
 import chalk from 'chalk';
 import { checkDockerConnection } from '../docker/client';
 import { checkK8sConnection } from '../kubernetes/client';
+import { checkMinikubeConnection } from '../minikube/client';
 import { registerShowCommand } from './show';
 import { registerHealthCommand } from './health';
 import { registerWatchCommand } from './watch';
@@ -12,7 +13,7 @@ import { showWelcomeBanner } from '../ui/banner';
 program
   .name('kdm')
   .description('Kubernetes and Docker Monitoring CLI')
-  .version('1.0.0');
+  .version('0.9.9');
 
 // Register modular commands
 registerShowCommand(program);
@@ -22,18 +23,25 @@ registerLogsCommand(program);
 
 const run = async () => {
   if (!process.argv.slice(2).length) {
-    showWelcomeBanner('1.0.0');
+    showWelcomeBanner('0.9.9');
 
-    const [dockerStatus, k8sStatus] = await Promise.all([
+    const [dockerStatus, k8sStatus, minikubeStatus] = await Promise.all([
       checkDockerConnection(),
-      checkK8sConnection()
+      checkK8sConnection(),
+      checkMinikubeConnection()
     ]);
 
     const dockerStr = dockerStatus.connected ? chalk.green('Connected') : chalk.red('Disconnected');
     const k8sStr = k8sStatus.connected ? chalk.green('Connected') : chalk.red('Disconnected');
+    
+    let minikubeStr = chalk.red('Not Installed');
+    if (minikubeStatus.installed) {
+      minikubeStr = minikubeStatus.running ? chalk.green('Running') : chalk.yellow('Stopped');
+    }
 
     console.log(`Docker: ${dockerStr}`);
-    console.log(`Kubernetes: ${k8sStr}\n`);
+    console.log(`Kubernetes: ${k8sStr}`);
+    console.log(`Minikube: ${minikubeStr}\n`);
     console.log(`Running Containers: ${chalk.yellow(dockerStatus.containerCount)}`);
     console.log(`Running Pods: ${chalk.yellow(k8sStatus.podCount)}`);
     console.log(`Unhealthy Services: ${chalk.yellow('0')} (Mocked)\n`);

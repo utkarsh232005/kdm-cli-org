@@ -4,12 +4,13 @@ import { createSpinner } from '../ui/spinner';
 import { renderTable } from '../ui/table';
 import { getRunningContainers } from '../docker/containers';
 import { getRunningPods } from '../kubernetes/pods';
+import { getMinikubeStatus, checkMinikubeConnection } from '../minikube/client';
 import chalk from 'chalk';
 
 export const registerShowCommand = (program: Command) => {
   program
     .command('show <target>')
-    .description('Show running runners, pods, or containers')
+    .description('Show running runners, pods, containers, or minikube')
     .action(async (target) => {
       if (target === 'containers') {
         await showContainers();
@@ -17,8 +18,10 @@ export const registerShowCommand = (program: Command) => {
         await showPods();
       } else if (target === 'runners') {
         await showRunners();
+      } else if (target === 'minikube') {
+        await showMinikube();
       } else {
-        logger.error(`Unknown target: ${target}. Valid targets are: runners, pods, containers.`);
+        logger.error(`Unknown target: ${target}. Valid targets are: runners, pods, containers, minikube.`);
       }
     });
 };
@@ -98,5 +101,34 @@ const showRunners = async () => {
         c.state === 'running' ? chalk.green(c.state) : chalk.red(c.state),
       ])
     ],
+  });
+};
+
+const showMinikube = async () => {
+  const spinner = createSpinner('Fetching Minikube status...').start();
+  const conn = await checkMinikubeConnection();
+  if (!conn.installed) {
+    spinner.stop();
+    logger.warn('Minikube is not installed on this system.');
+    return;
+  }
+  
+  const statusList = await getMinikubeStatus();
+  spinner.stop();
+
+  if (statusList.length === 0) {
+    logger.warn('No Minikube profiles found or status is unknown.');
+    return;
+  }
+
+  renderTable({
+    head: ['NAME', 'HOST', 'KUBELET', 'APISERVER', 'MESSAGE'],
+    rows: statusList.map((s) => [
+      s.Name || '-',
+      s.Host === 'Running' ? chalk.green(s.Host) : (s.Host === 'Stopped' ? chalk.red(s.Host) : chalk.yellow(s.Host || '-')),
+      s.Kubelet === 'Running' ? chalk.green(s.Kubelet) : chalk.yellow(s.Kubelet || '-'),
+      s.APIServer === 'Running' ? chalk.green(s.APIServer) : chalk.yellow(s.APIServer || '-'),
+      s.Message || '-',
+    ]),
   });
 };
