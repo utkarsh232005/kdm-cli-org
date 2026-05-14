@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { setConfig, getConfig, clearConfig } from '../utils/config';
-import { select } from '@vr_patel/tui';
+import { select, input } from '@vr_patel/tui';
 
 export const registerConfigCommand = (program: Command) => {
   const config = program
@@ -23,13 +23,44 @@ export const registerConfigCommand = (program: Command) => {
         });
 
         setConfig('notification_service', choice);
-        console.log(chalk.green(`\n✓ Notification service set to: ${chalk.bold(choice.toUpperCase())}`));
-        
+
         if (choice === 'discord') {
-          console.log(chalk.yellow('! Remember to set your webhook URL:'), chalk.cyan('kdm config set discord_webhook <url>'));
+          const webhook = await input({
+            message: "Discord Webhook URL:",
+            validate: (v) => v.startsWith('https://discord.com/api/webhooks/') || v.startsWith('https://ptb.discord.com/api/webhooks/') || "Must be a valid Discord webhook URL",
+          });
+          setConfig('discord_webhook', webhook);
+          console.log(chalk.green(`\n✓ Discord Webhook configured.`));
         } else if (choice === 'email') {
-          console.log(chalk.yellow('! Remember to set your SMTP details (email_host, email_port, email_user, email_to)'));
+          const host = await input({
+            message: "SMTP Host:",
+            placeholder: "smtp.gmail.com",
+            validate: (v) => v.length > 0 || "Host is required",
+          });
+          const portStr = await input({
+            message: "SMTP Port:",
+            defaultValue: "587",
+            validate: (v) => !isNaN(parseInt(v)) || "Must be a number",
+          });
+          const user = await input({
+            message: "SMTP User:",
+            validate: (v) => v.includes('@') || "Must be a valid email",
+          });
+          const to = await input({
+            message: "Alert Recipient Email:",
+            validate: (v) => v.includes('@') || "Must be a valid email",
+          });
+
+          setConfig('email_host', host);
+          setConfig('email_port', parseInt(portStr, 10));
+          setConfig('email_user', user);
+          setConfig('email_to', to);
+          
+          console.log(chalk.green(`\n✓ Email SMTP configured.`));
+          console.log(chalk.yellow('! Note: Please set your SMTP password in the KDM_SMTP_PASSWORD environment variable.'));
         }
+
+        console.log(chalk.green(`\n✓ Notification service set to: ${chalk.bold(choice.toUpperCase())}`));
       } catch (error) {
         console.error(chalk.red(`✗ Setup cancelled or failed: ${(error as Error).message}`));
       }
