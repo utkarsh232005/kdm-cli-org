@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Command } from 'commander';
 import { registerConfigCommand } from '../commands/config';
 import { setConfig, getConfig, clearConfig } from '../utils/config';
-import { select } from '@vr_patel/tui';
+import { select, input } from '@vr_patel/tui';
 
 vi.mock('../utils/config', () => ({
   setConfig: vi.fn(),
@@ -12,6 +12,7 @@ vi.mock('../utils/config', () => ({
 
 vi.mock('@vr_patel/tui', () => ({
   select: vi.fn(),
+  input: vi.fn(),
 }));
 
 describe('config command', () => {
@@ -33,12 +34,32 @@ describe('config command', () => {
     expect(configCmd?.commands.map((c) => c.name())).toEqual(['setup', 'set', 'list', 'clear']);
   });
 
-  it('should call select and setConfig on config setup', async () => {
+  it('should call select, input and setConfig on discord setup', async () => {
     (select as any).mockResolvedValue('discord');
+    (input as any).mockResolvedValue('https://discord.com/api/webhooks/123');
     await program.parseAsync(['node', 'test', 'config', 'setup']);
     expect(select).toHaveBeenCalled();
+    expect(input).toHaveBeenCalled();
     expect(setConfig).toHaveBeenCalledWith('notification_service', 'discord');
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringMatching(/Notification service set to:.*DISCORD/i));
+    expect(setConfig).toHaveBeenCalledWith('discord_webhook', 'https://discord.com/api/webhooks/123');
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringMatching(/Discord Webhook configured/i));
+  });
+
+  it('should call select, multiple inputs and setConfig on email setup', async () => {
+    (select as any).mockResolvedValue('email');
+    (input as any)
+      .mockResolvedValueOnce('smtp.gmail.com') // host
+      .mockResolvedValueOnce('587')            // port
+      .mockResolvedValueOnce('user@test.com')  // user
+      .mockResolvedValueOnce('to@test.com');    // to
+
+    await program.parseAsync(['node', 'test', 'config', 'setup']);
+    
+    expect(setConfig).toHaveBeenCalledWith('notification_service', 'email');
+    expect(setConfig).toHaveBeenCalledWith('email_host', 'smtp.gmail.com');
+    expect(setConfig).toHaveBeenCalledWith('email_port', 587);
+    expect(setConfig).toHaveBeenCalledWith('email_user', 'user@test.com');
+    expect(setConfig).toHaveBeenCalledWith('email_to', 'to@test.com');
   });
 
   it('should call setConfig on config set', async () => {
