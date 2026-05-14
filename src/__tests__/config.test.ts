@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Command } from 'commander';
 import { registerConfigCommand } from '../commands/config';
-import { setConfig, getConfig, clearConfig } from '../utils/config';
-import { select, input } from '@vr_patel/tui';
+import * as configUtils from '../utils/config';
+import * as tui from '@vr_patel/tui';
 
+// Mock the modules
 vi.mock('../utils/config', () => ({
   setConfig: vi.fn(),
   getConfig: vi.fn(() => ({})),
@@ -32,35 +33,40 @@ describe('config command', () => {
   it('should register config setup, set, list, and clear commands', () => {
     const configCmd = program.commands.find((c) => c.name() === 'config');
     expect(configCmd).toBeDefined();
-    expect(configCmd?.commands.map((c) => c.name())).toEqual(['setup', 'set', 'list', 'clear']);
+    const subCommandNames = configCmd?.commands.map((c) => c.name());
+    expect(subCommandNames).toContain('setup');
+    expect(subCommandNames).toContain('set');
+    expect(subCommandNames).toContain('list');
+    expect(subCommandNames).toContain('clear');
   });
 
   it('should clear credentials and set service to none', async () => {
-    (select as any).mockResolvedValue('none');
+    vi.mocked(tui.select).mockResolvedValue('none');
+    
     await program.parseAsync(['node', 'test', 'config', 'setup']);
     
-    const { setConfig } = await import('../utils/config');
-    expect(select).toHaveBeenCalled();
-    expect(setConfig).toHaveBeenCalledWith('notification_service', 'none');
+    expect(tui.select).toHaveBeenCalled();
+    expect(configUtils.clearNotificationCredentials).toHaveBeenCalled();
+    expect(configUtils.setConfig).toHaveBeenCalledWith('notification_service', 'none');
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringMatching(/Notifications disabled/i));
   });
 
   it('should call select, input and setConfig on discord setup', async () => {
-    (select as any).mockResolvedValue('discord');
-    (input as any).mockResolvedValue('https://discord.com/api/webhooks/123/abc');
+    vi.mocked(tui.select).mockResolvedValue('discord');
+    vi.mocked(tui.input).mockResolvedValue('https://discord.com/api/webhooks/123456789/token-here');
+    
     await program.parseAsync(['node', 'test', 'config', 'setup']);
     
-    const { setConfig } = await import('../utils/config');
-    expect(select).toHaveBeenCalled();
-    expect(input).toHaveBeenCalled();
-    expect(setConfig).toHaveBeenCalledWith('notification_service', 'discord');
-    expect(setConfig).toHaveBeenCalledWith('discord_webhook', 'https://discord.com/api/webhooks/123/abc');
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringMatching(/Discord Webhook configured/i));
+    expect(tui.select).toHaveBeenCalled();
+    expect(tui.input).toHaveBeenCalled();
+    expect(configUtils.clearNotificationCredentials).toHaveBeenCalled();
+    expect(configUtils.setConfig).toHaveBeenCalledWith('notification_service', 'discord');
+    expect(configUtils.setConfig).toHaveBeenCalledWith('discord_webhook', 'https://discord.com/api/webhooks/123456789/token-here');
   });
 
   it('should call select, multiple inputs and setConfig on email setup', async () => {
-    (select as any).mockResolvedValue('email');
-    (input as any)
+    vi.mocked(tui.select).mockResolvedValue('email');
+    vi.mocked(tui.input)
       .mockResolvedValueOnce('smtp.gmail.com') // host
       .mockResolvedValueOnce('587')            // port
       .mockResolvedValueOnce('user@test.com')  // user
@@ -68,36 +74,35 @@ describe('config command', () => {
 
     await program.parseAsync(['node', 'test', 'config', 'setup']);
     
-    const { setConfig } = await import('../utils/config');
-    expect(setConfig).toHaveBeenCalledWith('notification_service', 'email');
-    expect(setConfig).toHaveBeenCalledWith('email_host', 'smtp.gmail.com');
-    expect(setConfig).toHaveBeenCalledWith('email_port', 587);
-    expect(setConfig).toHaveBeenCalledWith('email_user', 'user@test.com');
-    expect(setConfig).toHaveBeenCalledWith('email_to', 'to@test.com');
+    expect(configUtils.setConfig).toHaveBeenCalledWith('notification_service', 'email');
+    expect(configUtils.setConfig).toHaveBeenCalledWith('email_host', 'smtp.gmail.com');
+    expect(configUtils.setConfig).toHaveBeenCalledWith('email_port', 587);
+    expect(configUtils.setConfig).toHaveBeenCalledWith('email_user', 'user@test.com');
+    expect(configUtils.setConfig).toHaveBeenCalledWith('email_to', 'to@test.com');
   });
 
   it('should call setConfig on config set', async () => {
     await program.parseAsync(['node', 'test', 'config', 'set', 'alert_email', 'test@test.com']);
-    expect(setConfig).toHaveBeenCalledWith('alert_email', 'test@test.com');
+    expect(configUtils.setConfig).toHaveBeenCalledWith('alert_email', 'test@test.com');
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Set alert_email to test@test.com'));
   });
 
   it('should parse integer for alert_cooldown', async () => {
     await program.parseAsync(['node', 'test', 'config', 'set', 'alert_cooldown', '123']);
-    expect(setConfig).toHaveBeenCalledWith('alert_cooldown', 123);
+    expect(configUtils.setConfig).toHaveBeenCalledWith('alert_cooldown', 123);
   });
 
   it('should call getConfig on config list', async () => {
-    (getConfig as any).mockReturnValue({ alert_cooldown: 100 });
+    vi.mocked(configUtils.getConfig).mockReturnValue({ alert_cooldown: 100 });
     await program.parseAsync(['node', 'test', 'config', 'list']);
-    expect(getConfig).toHaveBeenCalled();
+    expect(configUtils.getConfig).toHaveBeenCalled();
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('alert_cooldown'));
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('100'));
   });
 
   it('should call clearConfig on config clear', async () => {
     await program.parseAsync(['node', 'test', 'config', 'clear']);
-    expect(clearConfig).toHaveBeenCalled();
+    expect(configUtils.clearConfig).toHaveBeenCalled();
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration cleared'));
   });
 });

@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { setConfig, getConfig, clearConfig } from '../utils/config';
+import { setConfig, getConfig, clearConfig, clearNotificationCredentials } from '../utils/config';
 import { select, input } from '@vr_patel/tui';
 
 export const registerConfigCommand = (program: Command) => {
