@@ -133,28 +133,32 @@ export const showRunners = async () => {
 
 const showMinikube = async () => {
   const spinner = createSpinner('Fetching Minikube status...').start();
-  const conn = await checkMinikubeConnection();
-  if (!conn.installed) {
-    spinner.fail('Minikube is not installed on this system');
-    return;
-  }
-  
-  const statusList = await getMinikubeStatus();
-  spinner.stop('Minikube status fetched successfully');
+  try {
+    const conn = await checkMinikubeConnection();
+    if (!conn.installed) {
+      spinner.fail('Minikube is not installed on this system');
+      return;
+    }
+    
+    const statusList = await getMinikubeStatus();
+    spinner.stop('Minikube status fetched successfully');
 
-  if (statusList.length === 0) {
-    logger.warn('No Minikube profiles found or status is unknown.');
-    return;
-  }
+    if (statusList.length === 0) {
+      logger.warn('No Minikube profiles found or status is unknown.');
+      return;
+    }
 
-  renderTable({
-    head: ['NAME', 'HOST', 'KUBELET', 'APISERVER', 'MESSAGE'],
-    rows: statusList.map((s) => [
-      s.Name || '-',
-      s.Host === 'Running' ? chalk.green(s.Host) : (s.Host === 'Stopped' ? chalk.red(s.Host) : chalk.yellow(s.Host || '-')),
-      s.Kubelet === 'Running' ? chalk.green(s.Kubelet) : chalk.yellow(s.Kubelet || '-'),
-      s.APIServer === 'Running' ? chalk.green(s.APIServer) : chalk.yellow(s.APIServer || '-'),
-      s.Message || '-',
-    ]),
-  });
+    renderTable({
+      head: ['NAME', 'HOST', 'KUBELET', 'APISERVER', 'MESSAGE'],
+      rows: statusList.map((s) => [
+        s.Name || '-',
+        s.Host === 'Running' ? chalk.green(s.Host) : (s.Host === 'Stopped' ? chalk.red(s.Host) : chalk.yellow(s.Host || '-')),
+        s.Kubelet === 'Running' ? chalk.green(s.Kubelet) : chalk.yellow(s.Kubelet || '-'),
+        s.APIServer === 'Running' ? chalk.green(s.APIServer) : chalk.yellow(s.APIServer || '-'),
+        s.Message || '-',
+      ]),
+    });
+  } catch (error) {
+    spinner.fail(`Failed to fetch Minikube status: ${(error as Error).message}`);
+  }
 };

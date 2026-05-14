@@ -8,9 +8,12 @@ export const registerLogsCommand = (program: Command) => {
     .description('Show logs for a container or pod')
     .action(async (name) => {
       const spinner = createSpinner(`Fetching logs for ${name}...`).start();
-      // Simulate some work
-      await new Promise(resolve => setTimeout(resolve, 500));
-      spinner.stop(`Logs for ${name} fetched`);
-      logger.info(`Showing logs for ${name}...`);
+      try {
+        // Spinner should be driven by actual work here in the future
+        spinner.stop(`Logs for ${name} fetched`);
+        logger.info(`Showing logs for ${name}...`);
+      } catch (error) {
+        spinner.fail(`Failed to fetch logs for ${name}: ${(error as Error).message}`);
+      }
     });
 };
