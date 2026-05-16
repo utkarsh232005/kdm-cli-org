@@ -1,10 +1,19 @@
 documentation:
   - changed-files:
-    - any-glob-to-any-file: ['README.md', '*.md']
+    - any-glob-to-any-file:
+      - 'docs/**/*'
+      - '**/*.md'
 
-ci:
+frontend:
   - changed-files:
-    - any-glob-to-any-file: ['.github/workflows/**', '.github/**']
+    - any-glob-to-any-file:
+      - 'src/**/*'
+      - 'public/**/*'
+
+ci/cd:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**/*'
 
 tests:
   - changed-files:
