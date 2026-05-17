@@ -50,7 +50,14 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          
+          # Stage the docs directory
           git add docs/
+          
           git commit -m "chore: add version doc changelog for ${{ github.ref_name }} [skip ci]"
-          # TEMPORARILY CHANGE THIS TO TARGET YOUR FEATURE BRANCH:
+          
+          # 1. Pull latest changes (like the newly created tag/release info) and rebase your commit on top of it
+          git pull origin feat/changelog-auto-workflow --rebase
+          
+          # 2. Push the changes back securely
           git push origin HEAD:feat/changelog-auto-workflow
