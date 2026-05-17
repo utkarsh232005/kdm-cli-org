@@ -38,21 +38,17 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pull latest changes
+        run: git pull --rebase origin main
+
       - name: Bump version
         run: "npm version ${{ github.event.inputs.release_type }} -m 'chore: release v%s'"
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Commit lockfile if changed
-        run: |
-          git add package-lock.cjson || true
-          git diff --cached --quiet || git commit -m 'chore: update package-lock.cjson'
-
       - name: Push changes and tags
-        run: |
-          git pull --rebase origin main
-          git push --follow-tags
+        run: git push --follow-tags
 
       - name: Publish to npm
         run: npm publish --access public
@@ -62,7 +58,7 @@ jobs:
       - name: Get Version
         id: get_version
         run: |
-          VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./package.cjson', 'utf8')).version)")
+          VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./package.json', 'utf8')).version)")
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release

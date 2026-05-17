@@ -208,13 +208,13 @@ const unitTests = [
   {
     name: 'loadAutomationConfig: missing file → clear error',
     test: () => {
-      return expectLoadError('/nonexistent/path/config.cjson', 'Failed to read automation config');
+      return expectLoadError('/nonexistent/path/config.json', 'Failed to read automation config');
     },
   },
   {
     name: 'loadAutomationConfig: malformed JSON → clear error',
     test: () => {
-      const p = writeTempConfig('malformed.cjson', '{ broken json!!!');
+      const p = writeTempConfig('malformed.json', '{ broken json!!!');
       return expectLoadError(p, 'Failed to parse automation config');
     },
   },
@@ -227,7 +227,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.maintainerTeam;
-      const p = writeTempConfig('no-team.cjson', cfg);
+      const p = writeTempConfig('no-team.json', cfg);
       return expectLoadError(p, 'maintainerTeam must be a non-empty string');
     },
   },
@@ -236,7 +236,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.goodFirstIssueSupportTeam = '';
-      const p = writeTempConfig('empty-gfi-team.cjson', cfg);
+      const p = writeTempConfig('empty-gfi-team.json', cfg);
       return expectLoadError(p, 'goodFirstIssueSupportTeam must be a non-empty string');
     },
   },
@@ -249,7 +249,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.labels;
-      const p = writeTempConfig('no-labels.cjson', cfg);
+      const p = writeTempConfig('no-labels.json', cfg);
       return expectLoadError(p, 'labels must be an object');
     },
   },
@@ -258,7 +258,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.labels.skill;
-      const p = writeTempConfig('no-skill-labels.cjson', cfg);
+      const p = writeTempConfig('no-skill-labels.json', cfg);
       return expectLoadError(p, 'labels.skill must be an object');
     },
   },
@@ -267,7 +267,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.labels.status.awaitingTriage = '';
-      const p = writeTempConfig('empty-label.cjson', cfg);
+      const p = writeTempConfig('empty-label.json', cfg);
       return expectLoadError(p, 'labels.status.awaitingTriage is required and must be a non-empty string');
     },
   },
@@ -276,7 +276,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.labels.status.blocked;
-      const p = writeTempConfig('no-blocked.cjson', cfg);
+      const p = writeTempConfig('no-blocked.json', cfg);
       return expectLoadError(p, 'labels.status.blocked is required and must be a non-empty string');
     },
   },
@@ -285,7 +285,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.labels.skill.beginner;
-      const p = writeTempConfig('no-beginner.cjson', cfg);
+      const p = writeTempConfig('no-beginner.json', cfg);
       return expectLoadError(p, 'labels.skill.beginner is required and must be a non-empty string');
     },
   },
@@ -294,7 +294,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.labels.priority.high;
-      const p = writeTempConfig('no-high.cjson', cfg);
+      const p = writeTempConfig('no-high.json', cfg);
       return expectLoadError(p, 'labels.priority.high is required and must be a non-empty string');
     },
   },
@@ -307,7 +307,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.skillHierarchy = [];
-      const p = writeTempConfig('empty-skill-hier.cjson', cfg);
+      const p = writeTempConfig('empty-skill-hier.json', cfg);
       return expectLoadError(p, 'skillHierarchy must be a non-empty array');
     },
   },
@@ -316,7 +316,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.skillHierarchy.push('skill: nonexistent');
-      const p = writeTempConfig('bad-skill-hier.cjson', cfg);
+      const p = writeTempConfig('bad-skill-hier.json', cfg);
       return expectLoadError(p, 'skillHierarchy entry "skill: nonexistent" not found in labels.skill values');
     },
   },
@@ -325,7 +325,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.priorityHierarchy.push('priority: ultra');
-      const p = writeTempConfig('bad-prio-hier.cjson', cfg);
+      const p = writeTempConfig('bad-prio-hier.json', cfg);
       return expectLoadError(p, 'priorityHierarchy entry "priority: ultra" not found in labels.priority values');
     },
   },
@@ -334,7 +334,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.skillHierarchy.push(cfg.skillHierarchy[0]);
-      const p = writeTempConfig('dup-skill-hier.cjson', cfg);
+      const p = writeTempConfig('dup-skill-hier.json', cfg);
       return expectLoadError(p, 'appears more than once');
     },
   },
@@ -343,7 +343,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.priorityHierarchy.push(cfg.priorityHierarchy[0]);
-      const p = writeTempConfig('dup-prio-hier.cjson', cfg);
+      const p = writeTempConfig('dup-prio-hier.json', cfg);
       return expectLoadError(p, 'appears more than once');
     },
   },
@@ -356,7 +356,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.skillPrerequisites['skill: phantom'] = { requiredLabel: null, requiredCount: 0, displayName: 'Phantom' };
-      const p = writeTempConfig('bad-prereq-key.cjson', cfg);
+      const p = writeTempConfig('bad-prereq-key.json', cfg);
       return expectLoadError(p, 'skillPrerequisites key "skill: phantom" not found in skillHierarchy');
     },
   },
@@ -365,7 +365,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.skillPrerequisites['skill: beginner'].requiredLabel = 'skill: imaginary';
-      const p = writeTempConfig('bad-prereq-label.cjson', cfg);
+      const p = writeTempConfig('bad-prereq-label.json', cfg);
       return expectLoadError(p, 'requiredLabel "skill: imaginary" not found in skillHierarchy');
     },
   },
@@ -374,7 +374,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.skillPrerequisites['skill: intermediate'];
-      const p = writeTempConfig('missing-prereq-entry.cjson', cfg);
+      const p = writeTempConfig('missing-prereq-entry.json', cfg);
       return expectLoadError(p, 'skillPrerequisites is missing entry for skillHierarchy value "skill: intermediate"');
     },
   },
@@ -383,7 +383,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.skillPrerequisites['skill: good first issue'].requiredLabel;
-      const p = writeTempConfig('no-req-label.cjson', cfg);
+      const p = writeTempConfig('no-req-label.json', cfg);
       return expectLoadError(p, 'requiredLabel is required');
     },
   },
@@ -392,7 +392,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.skillPrerequisites['skill: beginner'].requiredCount;
-      const p = writeTempConfig('no-req-count.cjson', cfg);
+      const p = writeTempConfig('no-req-count.json', cfg);
       return expectLoadError(p, 'requiredCount must be a non-negative integer');
     },
   },
@@ -401,7 +401,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.skillPrerequisites['skill: advanced'].displayName;
-      const p = writeTempConfig('no-display-name.cjson', cfg);
+      const p = writeTempConfig('no-display-name.json', cfg);
       return expectLoadError(p, 'displayName is required and must be a non-empty string');
     },
   },
@@ -410,7 +410,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.skillPrerequisites['skill: intermediate'].prerequisiteDisplayName;
-      const p = writeTempConfig('no-prereq-display.cjson', cfg);
+      const p = writeTempConfig('no-prereq-display.json', cfg);
       return expectLoadError(p, 'prerequisiteDisplayName is required when requiredLabel is not null');
     },
   },
@@ -423,7 +423,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.assignmentLimits;
-      const p = writeTempConfig('no-limits.cjson', cfg);
+      const p = writeTempConfig('no-limits.json', cfg);
       return expectLoadError(p, 'assignmentLimits must be an object');
     },
   },
@@ -432,7 +432,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.assignmentLimits.maxOpenAssignments = 0;
-      const p = writeTempConfig('zero-limit.cjson', cfg);
+      const p = writeTempConfig('zero-limit.json', cfg);
       return expectLoadError(p, 'maxOpenAssignments must be a positive integer');
     },
   },
@@ -441,7 +441,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.assignmentLimits.maxGfiCompletions = -1;
-      const p = writeTempConfig('neg-gfi.cjson', cfg);
+      const p = writeTempConfig('neg-gfi.json', cfg);
       return expectLoadError(p, 'maxGfiCompletions must be a positive integer');
     },
   },
@@ -450,7 +450,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.assignmentLimits.maxOpenAssignments = 1.5;
-      const p = writeTempConfig('float-limit.cjson', cfg);
+      const p = writeTempConfig('float-limit.json', cfg);
       return expectLoadError(p, 'maxOpenAssignments must be a positive integer');
     },
   },
@@ -463,7 +463,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.documentation;
-      const p = writeTempConfig('no-docs.cjson', cfg);
+      const p = writeTempConfig('no-docs.json', cfg);
       return expectLoadError(p, 'documentation must be an object');
     },
   },
@@ -472,7 +472,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.documentation.signingGuide = '';
-      const p = writeTempConfig('empty-doc.cjson', cfg);
+      const p = writeTempConfig('empty-doc.json', cfg);
       return expectLoadError(p, 'documentation.signingGuide is required and must be a non-empty string');
     },
   },
@@ -481,7 +481,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.documentation.readme;
-      const p = writeTempConfig('no-readme-doc.cjson', cfg);
+      const p = writeTempConfig('no-readme-doc.json', cfg);
       return expectLoadError(p, 'documentation.readme is required and must be a non-empty string');
     },
   },
@@ -494,7 +494,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.community;
-      const p = writeTempConfig('no-community.cjson', cfg);
+      const p = writeTempConfig('no-community.json', cfg);
       return expectLoadError(p, 'community must be an object');
     },
   },
@@ -503,7 +503,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       cfg.community.discordChannel = '   ';
-      const p = writeTempConfig('empty-discord.cjson', cfg);
+      const p = writeTempConfig('empty-discord.json', cfg);
       return expectLoadError(p, 'community.discordChannel is required and must be a non-empty string');
     },
   },
@@ -512,7 +512,7 @@ const unitTests = [
     test: () => {
       const cfg = getValidConfig();
       delete cfg.community.discordChannel;
-      const p = writeTempConfig('no-discord.cjson', cfg);
+      const p = writeTempConfig('no-discord.json', cfg);
       return expectLoadError(p, 'community.discordChannel is required and must be a non-empty string');
     },
   },
@@ -526,7 +526,7 @@ const unitTests = [
       const cfg = getValidConfig();
       cfg.maintainerTeam = '@my-org/my-team';
       cfg.assignmentLimits.maxOpenAssignments = 5;
-      const p = writeTempConfig('custom.cjson', cfg);
+      const p = writeTempConfig('custom.json', cfg);
       const config = loadAutomationConfig(p);
       const derived = buildConstants(config);
       return (

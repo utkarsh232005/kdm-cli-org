@@ -3,7 +3,7 @@
 // helpers/config-loader.cjs
 //
 // Loads and validates the repository automation configuration from
-// .github/kdm-automation.cjson. Provides buildConstants() to map
+// .github/kdm-automation.json. Provides buildConstants() to map
 // the nested config structure back into the flat constant shapes
 // consumed by the rest of the bot scripts.
 
@@ -12,10 +12,10 @@ const path = require('path');
 
 /**
  * Default path to the repository automation config file.
- * Resolves from helpers/ → scripts/ → .github/kdm-automation.cjson.
+ * Resolves from helpers/ → scripts/ → .github/kdm-automation.json.
  * @type {string}
  */
-const DEFAULT_CONFIG_PATH = path.resolve(__dirname, '../../kdm-automation.cjson');
+const DEFAULT_CONFIG_PATH = path.resolve(__dirname, '../../kdm-automation.json');
 
 /**
  * Validates that a value is a non-empty string.
@@ -264,7 +264,7 @@ function validateConfig(config) {
 
   if (errors.length > 0) {
     throw new Error(
-      `Invalid kdm-automation.cjson:\n${errors.map((e) => `  - ${e}`).join('\n')}`,
+      `Invalid kdm-automation.json:\n${errors.map((e) => `  - ${e}`).join('\n')}`,
     );
   }
 }
