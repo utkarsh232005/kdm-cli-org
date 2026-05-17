@@ -46,8 +46,11 @@ jobs:
           
           # 2. If a core template folder exists, copy its entire structural hierarchy over
           if [ -d "$TEMPLATE_DIR" ]; then
-            cp -r "$TEMPLATE_DIR"/* "$TARGET_DIR"/
-            
+            shopt -s dotglob nullglob
+            template_items=("$TEMPLATE_DIR"/*)
+            if [ ${`#template_items`[@]} -gt 0 ]; then
+              cp -r "${template_items[@]}" "$TARGET_DIR"/
+            fi
             # 3. Recursively inject the mandatory Version string into every markdown file copied
             find "$TARGET_DIR" -type f -name "*.md" -exec sh -c '
               for file; do
