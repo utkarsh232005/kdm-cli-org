@@ -32,14 +32,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update CHANGELOG.md File
+      - name: Save Versioned Docs Management Changelog
         run: |
-          echo -e "# Changelog\n\n## ${{ github.ref_name }}\n\n${{ steps.github_release.outputs.changelog }}\n\n$(cat CHANGELOG.md 2>/dev/null || true)" > CHANGELOG.md
+          # 1. Create the target directory structure if it doesn't exist
+          mkdir -p docs/changelogs
+          
+          # 2. Define the filename dynamically using the current release tag string
+          # Example output path: docs/changelogs/v2.1.0.md
+          VERSION_FILE="docs/changelogs/${{ github.ref_name }}.md"
+          
+          # 3. Write clean header structure and populate it with generated release notes
+          echo -e "# Release Notes for ${{ github.ref_name }}\n" > "$VERSION_FILE"
+          echo -e "Published on: $(date +'%Y-%m-%d')\n" >> "$VERSION_FILE"
+          echo -e "${{ steps.github_release.outputs.changelog }}" >> "$VERSION_FILE"
 
       - name: Commit and Push Changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add CHANGELOG.md
-          git commit -m "chore: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
+          
+          # Stage the entire docs directory to track the new file addition
+          git add docs/
+          
+          git commit -m "chore: add version doc changelog for ${{ github.ref_name }} [skip ci]"
           git push origin HEAD:${{ github.event.repository.default_branch }}
