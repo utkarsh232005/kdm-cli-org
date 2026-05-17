@@ -27,7 +27,7 @@ jobs:
 
       - name: Build Changelog/Release Notes
         id: github_release
-        uses: mikepenz/release-changelog-builder-action@<full_commit_sha> # v4
+        uses: mikepenz/release-changelog-builder-action@32e3c96f29a6532607f638797455e9e98cfc703d # v4
         with:
           configuration: |
             {
@@ -42,6 +42,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Scaffold Versioned CLI Documentation System
+        env:
+          CHANGELOG: ${{ steps.github_release.outputs.changelog }}
         run: |
           VERSION="${{ github.ref_name }}"
           TARGET_DIR="docs/${VERSION}"
@@ -75,7 +77,6 @@ jobs:
           echo -e "# KDM CLI Documentation - ${VERSION}\n" > "$VERSION_README"
           echo -e "Published on: $(date +'%Y-%m-%d')\n" >> "$VERSION_README"
           printf '%s\n' "$CHANGELOG" >> "$VERSION_README"
-          echo -e "${{ steps.github_release.outputs.changelog }}" >> "$VERSION_README"
           printf '\n---\n**Version Information:** %s\n' "$VERSION" >> "$VERSION_README"
 
       - name: Commit and Push Changes
