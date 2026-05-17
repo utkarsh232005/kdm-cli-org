@@ -1,0 +1,45 @@
+name: Auto Changelog
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Changelog/Release Notes
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: |
+            {
+              "categories": [
+                { "title": "### Features", "labels": ["feature", "feat"] },
+                { "title": "### Fixes", "labels": ["fix", "bug"] },
+                { "title": "### Improvements", "labels": ["perf", "refactor"] },
+                { "title": "### Documentation", "labels": ["doc", "docs"] }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update CHANGELOG.md File
+        run: |
+          echo -e "# Changelog\n\n## ${{ github.ref_name }}\n\n${{ steps.github_release.outputs.changelog }}\n\n$(cat CHANGELOG.md 2>/dev/null || true)" > CHANGELOG.md
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add CHANGELOG.md
+          git commit -m "chore: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
