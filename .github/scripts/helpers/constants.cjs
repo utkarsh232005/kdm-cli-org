@@ -7,7 +7,7 @@
 const { loadAutomationConfig, buildConstants } = require('./config-loader');
 
 /**
- * Parsed and validated automation config loaded from .github/kdm-automation.cjson.
+ * Parsed and validated automation config loaded from .github/kdm-automation.json.
  * Exposed for modules that need access to nested config values (e.g. assignment limits).
  */
 const AUTOMATION_CONFIG = loadAutomationConfig();
