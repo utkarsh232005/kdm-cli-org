@@ -1,12 +1,32 @@
-# Documentation (Latest: v1.2.4-test)
+# KDM CLI Documentation — v1.2.2
 
-# KDM CLI Documentation - v1.2.4-test
-Published on: 2026-05-19
+## What's Changed
+* feat: add credential setup guidance by @fizyxbt in https://github.com/KDM-cli/kdm-cli/pull/23
+* docs: add versioned command documentation structure by @blut-agent in https://github.com/KDM-cli/kdm-cli/pull/28
+* feat: add auto-labeling and issue templates by @utkarsh232005 in https://github.com/KDM-cli/kdm-cli/pull/31
+* feat: use custom JS script for PR labeling by @utkarsh232005 in https://github.com/KDM-cli/kdm-cli/pull/32
+* feat: Migrate and Adapt KDM Bot Automation Scripts by @utkarsh232005 in https://github.com/KDM-cli/kdm-cli/pull/33
+* ci: bot automation migration by @utkarsh232005 in https://github.com/KDM-cli/kdm-cli/pull/35
+* ci: fix issue labeler and duplicate CodeRabbit findings by @utkarsh232005 in https://github.com/KDM-cli/kdm-cli/pull/37
+* docs: add contributing and security guidelines by @utkarsh232005 in https://github.com/KDM-cli/kdm-cli/pull/39
+* feat(cli): add auto version checking and update prompt by @blut-agent in https://github.com/KDM-cli/kdm-cli/pull/29
+* fix: version check logic and validation by @utkarsh232005 in https://github.com/KDM-cli/kdm-cli/pull/41
+* fix: implement real functionality for kdm logs and kdm health commands (#1) by @Rishiraj-Pathak-27 in https://github.com/KDM-cli/kdm-cli/pull/40
+* feat: automate versioned CLI command documentation scaffolding and changelog engine by @Yuvraj-Sarathe in https://github.com/KDM-cli/kdm-cli/pull/43
+* fix: refactor publish workflow and remove obsolete bots by @utkarsh232005 in https://github.com/KDM-cli/kdm-cli/pull/45
 
-- no changes
+## New Contributors
+* @blut-agent made their first contribution in https://github.com/KDM-cli/kdm-cli/pull/28
+* @Rishiraj-Pathak-27 made their first contribution in https://github.com/KDM-cli/kdm-cli/pull/40
+* @Yuvraj-Sarathe made their first contribution in https://github.com/KDM-cli/kdm-cli/pull/43
+
+**Full Changelog**: https://github.com/KDM-cli/kdm-cli/compare/v1.2.1...v1.2.2
 
 ---
+
 ## Version History
 
-* [v1.2.4-test](v1.2.4-test.md)
-* [v1.2.3-test](v1.2.3-test.md)
+* [v1.2.2](v1.2.2.md)
+* [v1.2.1](v1.2.1.md)
+* [v1.2.0](v1.2.0.md)
+* [v1.1.3](v1.1.3.md)
