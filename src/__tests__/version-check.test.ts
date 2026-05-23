@@ -115,6 +115,7 @@ describe('version-check utilities', () => {
     it('should treat Windows and POSIX separators the same when matching package paths', () => {
       expect(hasPathSuffix('C:\\repo\\src\\package.json', 'src/package.json')).toBe(true);
       expect(hasPathSuffix('/repo/src/package.json', 'src/package.json')).toBe(true);
+      expect(hasPathSuffix('/repo/src/package.json', 'src/other.json')).toBe(false);
     });
 
     it('should resolve and return the version if package.json in production path is valid', () => {
