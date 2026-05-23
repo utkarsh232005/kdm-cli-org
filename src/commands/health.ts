@@ -35,6 +35,7 @@ import { renderTable } from '../ui/table';
 export interface HealthOptions {
   watch?: boolean;
   interval?: string;
+  signal?: AbortSignal;
 }
 
 const healthColor = (status: string): string => {
@@ -49,37 +50,46 @@ const healthColor = (status: string): string => {
 
 const fetchHealthRows = async (target: string): Promise<(string | number)[][]> => {
   const rows: (string | number)[][] = [];
+  const shouldFetchContainers = target === 'all' || target === 'containers';
+  const shouldFetchPods = target === 'all' || target === 'pods';
 
-  if (target === 'all' || target === 'containers') {
-    try {
-      const containers = await getRunningContainers();
+  const [containerResult, podResult] = await Promise.allSettled([
+    shouldFetchContainers ? getRunningContainers() : Promise.resolve([]),
+    shouldFetchPods ? getRunningPods() : Promise.resolve([]),
+  ]);
+
+  if (shouldFetchContainers) {
+    if (containerResult.status === 'fulfilled') {
       rows.push(
-        ...containers.map((container) => [
+        ...containerResult.value.map((container) => [
           'container',
           container.name,
           healthColor(container.state),
           container.status,
         ]),
       );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+    } else {
+      const message = containerResult.reason instanceof Error
+        ? containerResult.reason.message
+        : String(containerResult.reason);
       logger.warn?.(`Docker unavailable: ${message}`);
     }
   }
 
-  if (target === 'all' || target === 'pods') {
-    try {
-      const pods = await getRunningPods();
+  if (shouldFetchPods) {
+    if (podResult.status === 'fulfilled') {
       rows.push(
-        ...pods.map((pod) => [
+        ...podResult.value.map((pod) => [
           'pod',
           pod.name,
           healthColor(pod.status),
           `namespace: ${pod.namespace}, restarts: ${pod.restarts}`,
         ]),
       );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+    } else {
+      const message = podResult.reason instanceof Error
+        ? podResult.reason.message
+        : String(podResult.reason);
       logger.warn?.(`Kubernetes unavailable: ${message}`);
     }
   }
@@ -100,9 +110,15 @@ export const showHealth = async (target: string, options: HealthOptions = {}): P
   }
 
   if (options.watch) {
-    const intervalSeconds = parseInt(options.interval || '5', 10);
-    if (isNaN(intervalSeconds) || intervalSeconds <= 0) {
-      logger.error?.('Invalid interval. Please provide a positive number of seconds.');
+    const intervalStr = options.interval || '5';
+    if (!/^\d+$/.test(intervalStr)) {
+      logger.error?.('Invalid interval. Please provide a positive integer number of seconds.');
+      process.exitCode = 1;
+      return;
+    }
+    const intervalSeconds = parseInt(intervalStr, 10);
+    if (intervalSeconds <= 0) {
+      logger.error?.('Invalid interval. Please provide a positive integer number of seconds.');
       process.exitCode = 1;
       return;
     }
@@ -115,23 +131,27 @@ export const showHealth = async (target: string, options: HealthOptions = {}): P
       if (timer) {
         clearTimeout(timer);
       }
+      if (options.signal) {
+        options.signal.removeEventListener('abort', cleanup);
+      }
     };
 
-    const sigintHandler = () => {
-      cleanup();
-      process.exit(0);
-    };
-
-    if (process.env.NODE_ENV !== 'test') {
-      process.on('SIGINT', sigintHandler);
-      process.on('SIGTERM', sigintHandler);
+    if (options.signal) {
+      if (options.signal.aborted) {
+        cleanup();
+        return;
+      }
+      options.signal.addEventListener('abort', cleanup);
     }
 
     const poll = async () => {
-      if (!isRunning) return;
+      if (!isRunning || (options.signal && options.signal.aborted)) {
+        cleanup();
+        return;
+      }
 
       const rows = await fetchHealthRows(target);
-      
+
       // Clear terminal screen
       process.stdout.write('\x1Bc');
 
@@ -150,8 +170,10 @@ export const showHealth = async (target: string, options: HealthOptions = {}): P
         });
       }
 
-      if (isRunning) {
+      if (isRunning && (!options.signal || !options.signal.aborted)) {
         timer = setTimeout(poll, intervalSeconds * 1000);
+      } else {
+        cleanup();
       }
     };
 
@@ -183,6 +205,23 @@ export const registerHealthCommand = (program: Command): void => {
     .option('-w, --watch', 'Watch mode: continuously refresh health output')
     .option('-i, --interval <number>', 'Refresh interval in seconds', '5')
     .action(async (target, options) => {
-      await showHealth(target, options);
+      if (options.watch) {
+        const controller = new AbortController();
+        const sigintHandler = () => {
+          controller.abort();
+          process.exit(0);
+        };
+        process.once('SIGINT', sigintHandler);
+        process.once('SIGTERM', sigintHandler);
+
+        try {
+          await showHealth(target, { ...options, signal: controller.signal });
+        } finally {
+          process.off('SIGINT', sigintHandler);
+          process.off('SIGTERM', sigintHandler);
+        }
+      } else {
+        await showHealth(target, options);
+      }
     });
 };

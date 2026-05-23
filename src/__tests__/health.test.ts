@@ -42,7 +42,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Command } from 'commander';
-import { registerHealthCommand } from '../commands/health';
+import { registerHealthCommand, showHealth } from '../commands/health';
 import { getRunningContainers } from '../docker/containers';
 import { getRunningPods } from '../kubernetes/pods';
 import { logger } from '../utils/logger';
@@ -201,9 +201,19 @@ describe('health command', () => {
     expect(intervalOption).toBeDefined();
   });
 
-  it('should log error on invalid interval', async () => {
+  it('should reject non-integer and malformed intervals strictly', async () => {
     await program.parseAsync(['node', 'test', 'health', 'all', '--watch', '--interval', '-1']);
-    expect(logger.error).toHaveBeenCalledWith(
+    expect(logger.error).toHaveBeenLastCalledWith(
+      expect.stringContaining('Invalid interval'),
+    );
+
+    await program.parseAsync(['node', 'test', 'health', 'all', '--watch', '--interval', '3.5']);
+    expect(logger.error).toHaveBeenLastCalledWith(
+      expect.stringContaining('Invalid interval'),
+    );
+
+    await program.parseAsync(['node', 'test', 'health', 'all', '--watch', '--interval', '3abc']);
+    expect(logger.error).toHaveBeenLastCalledWith(
       expect.stringContaining('Invalid interval'),
     );
   });
@@ -239,6 +249,36 @@ describe('health command', () => {
         ]),
       }),
     );
+
+    // Clean up
+    writeSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('should stop watch loop when AbortSignal is aborted', async () => {
+    vi.useFakeTimers();
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    vi.mocked(getRunningContainers).mockResolvedValue([
+      { id: '1', name: 'web', image: 'nginx', state: 'running', status: 'Up 2 hours' },
+    ]);
+    vi.mocked(getRunningPods).mockResolvedValue([]);
+
+    const controller = new AbortController();
+    
+    // Call showHealth directly with the signal and await the first poll tick
+    await showHealth('all', { watch: true, interval: '3', signal: controller.signal });
+
+    expect(tableUtils.renderTable).toHaveBeenCalledTimes(1);
+
+    // Now abort the controller
+    controller.abort();
+
+    // Advance timers by 3 seconds
+    await vi.advanceTimersByTimeAsync(3000);
+
+    // It should NOT call renderTable again because it was aborted
+    expect(tableUtils.renderTable).toHaveBeenCalledTimes(1);
 
     // Clean up
     writeSpy.mockRestore();
