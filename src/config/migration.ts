@@ -42,6 +42,8 @@ export const mergeLegacyConfig = (stored: StoredKDMConfig): KDMConfig => {
           service: 'none' as const,
           ...legacyNotifications,
           ...stored.notifications,
+          // SMTP password is env-only (KDM_SMTP_PASSWORD); never surface it from migrated config.
+          emailPassword: undefined,
         }
       : undefined;
 
