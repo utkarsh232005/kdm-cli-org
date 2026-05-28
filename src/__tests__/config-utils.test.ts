@@ -94,6 +94,8 @@ describe('config utils', () => {
 
   it('should reject storing SMTP passwords in config', () => {
     expect(() => setConfig('email_password', 'secret')).toThrow(/KDM_SMTP_PASSWORD/);
-    expect(mockConfInstance.set).not.toHaveBeenCalledWith('email_password', 'secret');
+    expect(
+      mockConfInstance.set.mock.calls.some(([key]: [string]) => key === 'email_password'),
+    ).toBe(false);
   });
 });
