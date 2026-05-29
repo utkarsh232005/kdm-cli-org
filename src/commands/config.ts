@@ -10,7 +10,7 @@ const promptReconfigurationIfNeeded = async (): Promise<boolean> => {
   }
 
   const serviceLabel = currentConfig.notification_service === 'discord' ? 'Discord' : 'Email (SMTP)';
-  console.log(chalk.yellow`\n⚠ Current notification service is set to: ${chalk.bold(serviceLabel)}`);
+  console.log(chalk.yellow(`\n⚠ Current notification service is set to: ${chalk.bold(serviceLabel)}`));
 
   const shouldReconfigure = await select({
     message: 'Would you like to reconfigure?',
