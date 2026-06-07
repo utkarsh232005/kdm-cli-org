@@ -4,10 +4,13 @@ export interface AnalysisOptions {
   filters?: string[];
   namespace?: string;
   labelSelector?: string;
+  kubeconfig?: string;
+  kubecontext?: string;
   output?: 'text' | 'json';
   maxConcurrency?: number;
   withStats?: boolean;
   withDocs?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface AnalysisStats {
