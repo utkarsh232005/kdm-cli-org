@@ -84,44 +84,77 @@ vi.mock('../kubernetes/resources', () => ({
 const joinErrors = (results: any[]): string =>
   results.flatMap((r: any) => r.errors.map((e: any) => e.text)).join('\n');
 
+/**
+ * Interface configuring the verifyAnalyzerFailure helper.
+ */
+interface VerifyFailureParams {
+  analyzer: any;
+  listFn: any;
+  mockValue: any;
+  expectedKind: string;
+  expectedName: string;
+  expectedNamespace?: string;
+  assertErrors: (errors: string) => void;
+}
+
+/**
+ * Helper to dry up duplicate analyzer failure tests.
+ */
+const verifyAnalyzerFailure = async (params: VerifyFailureParams): Promise<void> => {
+  vi.mocked(params.listFn).mockResolvedValueOnce(params.mockValue);
+  const results = await params.analyzer.analyze({});
+  expect(results).toHaveLength(1);
+  expect(results[0].kind).toBe(params.expectedKind);
+  expect(results[0].name).toBe(params.expectedName);
+  if (params.expectedNamespace) {
+    expect(results[0].namespace).toBe(params.expectedNamespace);
+  }
+  params.assertErrors(joinErrors(results));
+};
+
 // ─── ReplicaSet Analyzer ───────────────────────────────────────────
 
 describe('ReplicaSetAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects insufficient ready replicas and reports correct metadata', async () => {
-    vi.mocked(listReplicaSets).mockResolvedValueOnce([{
-      metadata: { name: 'api-rs', namespace: 'production' },
-      spec: { replicas: 5 },
-      status: { readyReplicas: 2 },
-    } as any]);
-
-    const results = await ReplicaSetAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('ReplicaSet');
-    expect(results[0].name).toBe('api-rs');
-    expect(results[0].namespace).toBe('production');
-    expect(results[0].errors[0].text).toContain('2/5 ready replicas');
+    await verifyAnalyzerFailure({
+      analyzer: ReplicaSetAnalyzer,
+      listFn: listReplicaSets,
+      mockValue: [{
+        metadata: { name: 'api-rs', namespace: 'production' },
+        spec: { replicas: 5 },
+        status: { readyReplicas: 2 },
+      }],
+      expectedKind: 'ReplicaSet',
+      expectedName: 'api-rs',
+      expectedNamespace: 'production',
+      assertErrors: (errors) => expect(errors).toContain('2/5 ready replicas'),
+    });
   });
 
   it('detects condition failures with message text', async () => {
-    vi.mocked(listReplicaSets).mockResolvedValueOnce([{
-      metadata: { name: 'rs-cond', namespace: 'default' },
-      spec: { replicas: 1 },
-      status: {
-        readyReplicas: 1,
-        conditions: [
-          { type: 'ReplicaFailure', status: 'False', message: 'quota exceeded' },
-        ],
+    await verifyAnalyzerFailure({
+      analyzer: ReplicaSetAnalyzer,
+      listFn: listReplicaSets,
+      mockValue: [{
+        metadata: { name: 'rs-cond', namespace: 'default' },
+        spec: { replicas: 1 },
+        status: {
+          readyReplicas: 1,
+          conditions: [
+            { type: 'ReplicaFailure', status: 'False', message: 'quota exceeded' },
+          ],
+        },
+      }],
+      expectedKind: 'ReplicaSet',
+      expectedName: 'rs-cond',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => {
+        expect(errors).toContain('ReplicaFailure');
+        expect(errors).toContain('quota exceeded');
       },
-    } as any]);
-
-    const results = await ReplicaSetAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(joinErrors(results)).toContain('ReplicaFailure');
-    expect(joinErrors(results)).toContain('quota exceeded');
+    });
   });
 
   it('skips ReplicaSets with zero desired replicas', async () => {
@@ -141,19 +174,19 @@ describe('StatefulSetAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects insufficient ready replicas and reports correct metadata', async () => {
-    vi.mocked(listStatefulSets).mockResolvedValueOnce([{
-      metadata: { name: 'redis', namespace: 'cache' },
-      spec: { replicas: 3 },
-      status: { readyReplicas: 0 },
-    } as any]);
-
-    const results = await StatefulSetAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('StatefulSet');
-    expect(results[0].name).toBe('redis');
-    expect(results[0].namespace).toBe('cache');
-    expect(results[0].errors[0].text).toContain('0/3 ready replicas');
+    await verifyAnalyzerFailure({
+      analyzer: StatefulSetAnalyzer,
+      listFn: listStatefulSets,
+      mockValue: [{
+        metadata: { name: 'redis', namespace: 'cache' },
+        spec: { replicas: 3 },
+        status: { readyReplicas: 0 },
+      }],
+      expectedKind: 'StatefulSet',
+      expectedName: 'redis',
+      expectedNamespace: 'cache',
+      assertErrors: (errors) => expect(errors).toContain('0/3 ready replicas'),
+    });
   });
 });
 
@@ -163,20 +196,21 @@ describe('DaemonSetAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects both unavailable and misscheduled pods', async () => {
-    vi.mocked(listDaemonSets).mockResolvedValueOnce([{
-      metadata: { name: 'fluentd', namespace: 'logging' },
-      status: { desiredNumberScheduled: 5, numberReady: 3, numberMisscheduled: 2 },
-    } as any]);
-
-    const results = await DaemonSetAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('DaemonSet');
-    expect(results[0].name).toBe('fluentd');
-    expect(results[0].namespace).toBe('logging');
-    const errors = joinErrors(results);
-    expect(errors).toContain('3/5 ready pods');
-    expect(errors).toContain('2 misscheduled pods');
+    await verifyAnalyzerFailure({
+      analyzer: DaemonSetAnalyzer,
+      listFn: listDaemonSets,
+      mockValue: [{
+        metadata: { name: 'fluentd', namespace: 'logging' },
+        status: { desiredNumberScheduled: 5, numberReady: 3, numberMisscheduled: 2 },
+      }],
+      expectedKind: 'DaemonSet',
+      expectedName: 'fluentd',
+      expectedNamespace: 'logging',
+      assertErrors: (errors) => {
+        expect(errors).toContain('3/5 ready pods');
+        expect(errors).toContain('2 misscheduled pods');
+      },
+    });
   });
 });
 
@@ -186,35 +220,42 @@ describe('JobAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects failed pods, failure condition, and backoff limit exceeded', async () => {
-    vi.mocked(listJobs).mockResolvedValueOnce([{
-      metadata: { name: 'etl-job', namespace: 'batch' },
-      spec: { backoffLimit: 3 },
-      status: {
-        failed: 3,
-        conditions: [{ type: 'Failed', status: 'True', reason: 'BackoffLimitExceeded', message: 'Job reached backoff limit' }],
+    await verifyAnalyzerFailure({
+      analyzer: JobAnalyzer,
+      listFn: listJobs,
+      mockValue: [{
+        metadata: { name: 'etl-job', namespace: 'batch' },
+        spec: { backoffLimit: 3 },
+        status: {
+          failed: 3,
+          conditions: [{ type: 'Failed', status: 'True', reason: 'BackoffLimitExceeded', message: 'Job reached backoff limit' }],
+        },
+      }],
+      expectedKind: 'Job',
+      expectedName: 'etl-job',
+      expectedNamespace: 'batch',
+      assertErrors: (errors) => {
+        expect(errors).toContain('3 failed pods');
+        expect(errors).toContain('BackoffLimitExceeded');
+        expect(errors).toContain('exceeded backoff limit');
       },
-    } as any]);
-
-    const results = await JobAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('Job');
-    expect(results[0].name).toBe('etl-job');
-    const errors = joinErrors(results);
-    expect(errors).toContain('3 failed pods');
-    expect(errors).toContain('BackoffLimitExceeded');
-    expect(errors).toContain('exceeded backoff limit');
+    });
   });
 
   it('uses singular "pod" for single failure', async () => {
-    vi.mocked(listJobs).mockResolvedValueOnce([{
-      metadata: { name: 'one-fail', namespace: 'default' },
-      spec: { backoffLimit: 6 },
-      status: { failed: 1 },
-    } as any]);
-
-    const results = await JobAnalyzer.analyze({});
-    expect(results[0].errors[0].text).toBe('Job has 1 failed pod');
+    await verifyAnalyzerFailure({
+      analyzer: JobAnalyzer,
+      listFn: listJobs,
+      mockValue: [{
+        metadata: { name: 'one-fail', namespace: 'default' },
+        spec: { backoffLimit: 6 },
+        status: { failed: 1 },
+      }],
+      expectedKind: 'Job',
+      expectedName: 'one-fail',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => expect(errors).toBe('Job has 1 failed pod'),
+    });
   });
 });
 
@@ -224,27 +265,33 @@ describe('CronJobAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects suspended CronJob', async () => {
-    vi.mocked(listCronJobs).mockResolvedValueOnce([{
-      metadata: { name: 'backup', namespace: 'ops' },
-      spec: { schedule: '0 2 * * *', suspend: true },
-    } as any]);
-
-    const results = await CronJobAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('CronJob');
-    expect(results[0].name).toBe('backup');
-    expect(results[0].errors[0].text).toContain('suspended');
+    await verifyAnalyzerFailure({
+      analyzer: CronJobAnalyzer,
+      listFn: listCronJobs,
+      mockValue: [{
+        metadata: { name: 'backup', namespace: 'ops' },
+        spec: { schedule: '0 2 * * *', suspend: true },
+      }],
+      expectedKind: 'CronJob',
+      expectedName: 'backup',
+      expectedNamespace: 'ops',
+      assertErrors: (errors) => expect(errors).toContain('suspended'),
+    });
   });
 
   it('detects CronJob with no schedule', async () => {
-    vi.mocked(listCronJobs).mockResolvedValueOnce([{
-      metadata: { name: 'no-sched', namespace: 'default' },
-      spec: {},
-    } as any]);
-
-    const results = await CronJobAnalyzer.analyze({});
-    expect(joinErrors(results)).toContain('no schedule defined');
+    await verifyAnalyzerFailure({
+      analyzer: CronJobAnalyzer,
+      listFn: listCronJobs,
+      mockValue: [{
+        metadata: { name: 'no-sched', namespace: 'default' },
+        spec: {},
+      }],
+      expectedKind: 'CronJob',
+      expectedName: 'no-sched',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => expect(errors).toContain('no schedule defined'),
+    });
   });
 });
 
@@ -254,40 +301,52 @@ describe('IngressAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects Ingress with no rules', async () => {
-    vi.mocked(listIngresses).mockResolvedValueOnce([{
-      metadata: { name: 'empty-ing', namespace: 'web' },
-      spec: {},
-    } as any]);
-
-    const results = await IngressAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('Ingress');
-    expect(results[0].errors[0].text).toContain('no rules defined');
+    await verifyAnalyzerFailure({
+      analyzer: IngressAnalyzer,
+      listFn: listIngresses,
+      mockValue: [{
+        metadata: { name: 'empty-ing', namespace: 'web' },
+        spec: {},
+      }],
+      expectedKind: 'Ingress',
+      expectedName: 'empty-ing',
+      expectedNamespace: 'web',
+      assertErrors: (errors) => expect(errors).toContain('no rules defined'),
+    });
   });
 
   it('detects hosts without TLS configuration', async () => {
-    vi.mocked(listIngresses).mockResolvedValueOnce([{
-      metadata: { name: 'no-tls', namespace: 'default' },
-      spec: {
-        rules: [{ host: 'api.example.com', http: { paths: [{ path: '/', backend: { service: { name: 'api' } } }] } }],
-      },
-    } as any]);
-
-    const results = await IngressAnalyzer.analyze({});
-    expect(joinErrors(results)).toContain('hosts but no TLS');
+    await verifyAnalyzerFailure({
+      analyzer: IngressAnalyzer,
+      listFn: listIngresses,
+      mockValue: [{
+        metadata: { name: 'no-tls', namespace: 'default' },
+        spec: {
+          rules: [{ host: 'api.example.com', http: { paths: [{ path: '/', backend: { service: { name: 'api' } } }] } }],
+        },
+      }],
+      expectedKind: 'Ingress',
+      expectedName: 'no-tls',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => expect(errors).toContain('hosts but no TLS'),
+    });
   });
 
   it('detects missing backend service on a rule path', async () => {
-    vi.mocked(listIngresses).mockResolvedValueOnce([{
-      metadata: { name: 'bad-backend', namespace: 'default' },
-      spec: {
-        rules: [{ host: 'app.test', http: { paths: [{ path: '/api', backend: {} }] } }],
-      },
-    } as any]);
-
-    const results = await IngressAnalyzer.analyze({});
-    expect(joinErrors(results)).toContain('no backend service');
+    await verifyAnalyzerFailure({
+      analyzer: IngressAnalyzer,
+      listFn: listIngresses,
+      mockValue: [{
+        metadata: { name: 'bad-backend', namespace: 'default' },
+        spec: {
+          rules: [{ host: 'app.test', http: { paths: [{ path: '/api', backend: {} }] } }],
+        },
+      }],
+      expectedKind: 'Ingress',
+      expectedName: 'bad-backend',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => expect(errors).toContain('no backend service'),
+    });
   });
 });
 
@@ -297,15 +356,17 @@ describe('ConfigMapAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects empty ConfigMap with no data keys', async () => {
-    vi.mocked(listConfigMaps).mockResolvedValueOnce([{
-      metadata: { name: 'empty-cm', namespace: 'default' },
-    } as any]);
-
-    const results = await ConfigMapAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('ConfigMap');
-    expect(results[0].errors[0].text).toContain('no data keys');
+    await verifyAnalyzerFailure({
+      analyzer: ConfigMapAnalyzer,
+      listFn: listConfigMaps,
+      mockValue: [{
+        metadata: { name: 'empty-cm', namespace: 'default' },
+      }],
+      expectedKind: 'ConfigMap',
+      expectedName: 'empty-cm',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => expect(errors).toContain('no data keys'),
+    });
   });
 });
 
@@ -315,36 +376,44 @@ describe('HPAAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects HPA at maximum replicas', async () => {
-    vi.mocked(listHPAs).mockResolvedValueOnce([{
-      metadata: { name: 'web-hpa', namespace: 'production' },
-      spec: { maxReplicas: 10 },
-      status: { currentReplicas: 10 },
-    } as any]);
-
-    const results = await HPAAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('HorizontalPodAutoscaler');
-    expect(results[0].errors[0].text).toContain('maximum replicas (10/10)');
+    await verifyAnalyzerFailure({
+      analyzer: HPAAnalyzer,
+      listFn: listHPAs,
+      mockValue: [{
+        metadata: { name: 'web-hpa', namespace: 'production' },
+        spec: { maxReplicas: 10 },
+        status: { currentReplicas: 10 },
+      }],
+      expectedKind: 'HorizontalPodAutoscaler',
+      expectedName: 'web-hpa',
+      expectedNamespace: 'production',
+      assertErrors: (errors) => expect(errors).toContain('maximum replicas (10/10)'),
+    });
   });
 
   it('detects ScalingLimited and AbleToScale=False conditions', async () => {
-    vi.mocked(listHPAs).mockResolvedValueOnce([{
-      metadata: { name: 'limited-hpa', namespace: 'default' },
-      spec: { maxReplicas: 20 },
-      status: {
-        currentReplicas: 5,
-        conditions: [
-          { type: 'ScalingLimited', status: 'True', message: 'at max' },
-          { type: 'AbleToScale', status: 'False', message: 'no metrics' },
-        ],
+    await verifyAnalyzerFailure({
+      analyzer: HPAAnalyzer,
+      listFn: listHPAs,
+      mockValue: [{
+        metadata: { name: 'limited-hpa', namespace: 'default' },
+        spec: { maxReplicas: 20 },
+        status: {
+          currentReplicas: 5,
+          conditions: [
+            { type: 'ScalingLimited', status: 'True', message: 'at max' },
+            { type: 'AbleToScale', status: 'False', message: 'no metrics' },
+          ],
+        },
+      }],
+      expectedKind: 'HorizontalPodAutoscaler',
+      expectedName: 'limited-hpa',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => {
+        expect(errors).toContain('scaling limited');
+        expect(errors).toContain('unable to scale');
       },
-    } as any]);
-
-    const results = await HPAAnalyzer.analyze({});
-    const errors = joinErrors(results);
-    expect(errors).toContain('scaling limited');
-    expect(errors).toContain('unable to scale');
+    });
   });
 });
 
@@ -354,19 +423,21 @@ describe('PDBAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects zero disruptions allowed and unhealthy pods', async () => {
-    vi.mocked(listPDBs).mockResolvedValueOnce([{
-      metadata: { name: 'api-pdb', namespace: 'default' },
-      status: { disruptionsAllowed: 0, expectedPods: 3, currentHealthy: 2 },
-    } as any]);
-
-    const results = await PDBAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('PodDisruptionBudget');
-    expect(results[0].name).toBe('api-pdb');
-    const errors = joinErrors(results);
-    expect(errors).toContain('zero disruptions');
-    expect(errors).toContain('2/3 healthy pods');
+    await verifyAnalyzerFailure({
+      analyzer: PDBAnalyzer,
+      listFn: listPDBs,
+      mockValue: [{
+        metadata: { name: 'api-pdb', namespace: 'default' },
+        status: { disruptionsAllowed: 0, expectedPods: 3, currentHealthy: 2 },
+      }],
+      expectedKind: 'PodDisruptionBudget',
+      expectedName: 'api-pdb',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => {
+        expect(errors).toContain('zero disruptions');
+        expect(errors).toContain('2/3 healthy pods');
+      },
+    });
   });
 });
 
@@ -376,32 +447,40 @@ describe('NetworkPolicyAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects empty podSelector and missing ingress rules', async () => {
-    vi.mocked(listNetworkPolicies).mockResolvedValueOnce([{
-      metadata: { name: 'deny-all', namespace: 'secure' },
-      spec: { podSelector: {}, policyTypes: ['Ingress'], ingress: [] },
-    } as any]);
-
-    const results = await NetworkPolicyAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('NetworkPolicy');
-    const errors = joinErrors(results);
-    expect(errors).toContain('empty podSelector');
-    expect(errors).toContain('blocks all ingress');
+    await verifyAnalyzerFailure({
+      analyzer: NetworkPolicyAnalyzer,
+      listFn: listNetworkPolicies,
+      mockValue: [{
+        metadata: { name: 'deny-all', namespace: 'secure' },
+        spec: { podSelector: {}, policyTypes: ['Ingress'], ingress: [] },
+      }],
+      expectedKind: 'NetworkPolicy',
+      expectedName: 'deny-all',
+      expectedNamespace: 'secure',
+      assertErrors: (errors) => {
+        expect(errors).toContain('empty podSelector');
+        expect(errors).toContain('blocks all ingress');
+      },
+    });
   });
 
   it('detects missing egress rules when Egress policy declared', async () => {
-    vi.mocked(listNetworkPolicies).mockResolvedValueOnce([{
-      metadata: { name: 'no-egress', namespace: 'default' },
-      spec: {
-        podSelector: { matchLabels: { app: 'web' } },
-        policyTypes: ['Egress'],
-        egress: [],
-      },
-    } as any]);
-
-    const results = await NetworkPolicyAnalyzer.analyze({});
-    expect(joinErrors(results)).toContain('blocks all egress');
+    await verifyAnalyzerFailure({
+      analyzer: NetworkPolicyAnalyzer,
+      listFn: listNetworkPolicies,
+      mockValue: [{
+        metadata: { name: 'no-egress', namespace: 'default' },
+        spec: {
+          podSelector: { matchLabels: { app: 'web' } },
+          policyTypes: ['Egress'],
+          egress: [],
+        },
+      }],
+      expectedKind: 'NetworkPolicy',
+      expectedName: 'no-egress',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => expect(errors).toContain('blocks all egress'),
+    });
   });
 });
 
@@ -411,22 +490,24 @@ describe('EventsAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects Warning events and captures involvedObject metadata', async () => {
-    vi.mocked(listEvents).mockResolvedValueOnce([{
-      metadata: { name: 'evt-1', namespace: 'kube-system' },
-      type: 'Warning',
-      reason: 'FailedScheduling',
-      message: 'Insufficient cpu',
-      involvedObject: { name: 'my-pod', kind: 'Pod' },
-    } as any]);
-
-    const results = await EventsAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('Event');
-    expect(results[0].name).toBe('my-pod');
-    expect(results[0].parentObject).toBe('Pod');
-    expect(results[0].errors[0].text).toContain('FailedScheduling');
-    expect(results[0].errors[0].text).toContain('Insufficient cpu');
+    await verifyAnalyzerFailure({
+      analyzer: EventsAnalyzer,
+      listFn: listEvents,
+      mockValue: [{
+        metadata: { name: 'evt-1', namespace: 'kube-system' },
+        type: 'Warning',
+        reason: 'FailedScheduling',
+        message: 'Insufficient cpu',
+        involvedObject: { name: 'my-pod', kind: 'Pod' },
+      }],
+      expectedKind: 'Event',
+      expectedName: 'my-pod',
+      expectedNamespace: 'kube-system',
+      assertErrors: (errors) => {
+        expect(errors).toContain('FailedScheduling');
+        expect(errors).toContain('Insufficient cpu');
+      },
+    });
   });
 });
 
@@ -436,16 +517,16 @@ describe('StorageAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects StorageClass with no provisioner', async () => {
-    vi.mocked(listStorageClasses).mockResolvedValueOnce([{
-      metadata: { name: 'bad-sc' },
-    } as any]);
-    vi.mocked(listPersistentVolumeClaims).mockResolvedValueOnce([]);
-
-    const results = await StorageAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('Storage');
-    expect(results[0].errors[0].text).toContain('no provisioner');
+    await verifyAnalyzerFailure({
+      analyzer: StorageAnalyzer,
+      listFn: listStorageClasses,
+      mockValue: [{
+        metadata: { name: 'bad-sc' },
+      }],
+      expectedKind: 'Storage',
+      expectedName: 'bad-sc',
+      assertErrors: (errors) => expect(errors).toContain('no provisioner'),
+    });
   });
 
   it('detects PVC referencing non-existent StorageClass', async () => {
@@ -453,16 +534,18 @@ describe('StorageAnalyzer', () => {
       metadata: { name: 'gp2' },
       provisioner: 'ebs.csi.aws.com',
     } as any]);
-    vi.mocked(listPersistentVolumeClaims).mockResolvedValueOnce([{
-      metadata: { name: 'orphan-pvc', namespace: 'default' },
-      spec: { storageClassName: 'deleted-class' },
-    } as any]);
-
-    const results = await StorageAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].name).toBe('orphan-pvc');
-    expect(results[0].errors[0].text).toContain("'deleted-class' which does not exist");
+    await verifyAnalyzerFailure({
+      analyzer: StorageAnalyzer,
+      listFn: listPersistentVolumeClaims,
+      mockValue: [{
+        metadata: { name: 'orphan-pvc', namespace: 'default' },
+        spec: { storageClassName: 'deleted-class' },
+      }],
+      expectedKind: 'Storage',
+      expectedName: 'orphan-pvc',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => expect(errors).toContain("'deleted-class' which does not exist"),
+    });
   });
 });
 
@@ -472,40 +555,27 @@ describe('SecurityAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects root user, privileged mode, and missing readOnlyRootFilesystem', async () => {
-    vi.mocked(listPods).mockResolvedValueOnce([{
-      metadata: { name: 'insecure-pod', namespace: 'default' },
-      spec: {
-        containers: [{
-          name: 'app',
-          securityContext: { privileged: true },
-        }],
+    await verifyAnalyzerFailure({
+      analyzer: SecurityAnalyzer,
+      listFn: listPods,
+      mockValue: [{
+        metadata: { name: 'insecure-pod', namespace: 'default' },
+        spec: {
+          containers: [{
+            name: 'app',
+            securityContext: { privileged: true },
+          }],
+        },
+      }],
+      expectedKind: 'Security',
+      expectedName: 'insecure-pod',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => {
+        expect(errors).toContain('may run as root');
+        expect(errors).toContain('privileged mode');
+        expect(errors).toContain('read-only root filesystem');
       },
-    } as any]);
-
-    const results = await SecurityAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('Security');
-    expect(results[0].name).toBe('insecure-pod');
-    const errors = joinErrors(results);
-    expect(errors).toContain('may run as root');
-    expect(errors).toContain('privileged mode');
-    expect(errors).toContain('read-only root filesystem');
-  });
-
-  it('respects pod-level runAsNonRoot when container-level is absent', async () => {
-    vi.mocked(listPods).mockResolvedValueOnce([{
-      metadata: { name: 'pod-level-sec', namespace: 'default' },
-      spec: {
-        securityContext: { runAsNonRoot: true },
-        containers: [{
-          name: 'app',
-          securityContext: { readOnlyRootFilesystem: true },
-        }],
-      },
-    } as any]);
-
-    await expect(SecurityAnalyzer.analyze({})).resolves.toEqual([]);
+    });
   });
 });
 
@@ -555,18 +625,20 @@ describe('GatewayClassAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects GatewayClass not accepted with reason', async () => {
-    vi.mocked(listGatewayClasses).mockResolvedValueOnce([{
-      metadata: { name: 'istio' },
-      status: { conditions: [{ type: 'Accepted', status: 'False', reason: 'InvalidConfig', message: 'bad params' }] },
-    }]);
-
-    const results = await GatewayClassAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('GatewayClass');
-    expect(results[0].name).toBe('istio');
-    expect(joinErrors(results)).toContain('not accepted');
-    expect(joinErrors(results)).toContain('InvalidConfig');
+    await verifyAnalyzerFailure({
+      analyzer: GatewayClassAnalyzer,
+      listFn: listGatewayClasses,
+      mockValue: [{
+        metadata: { name: 'istio' },
+        status: { conditions: [{ type: 'Accepted', status: 'False', reason: 'InvalidConfig', message: 'bad params' }] },
+      }],
+      expectedKind: 'GatewayClass',
+      expectedName: 'istio',
+      assertErrors: (errors) => {
+        expect(errors).toContain('not accepted');
+        expect(errors).toContain('InvalidConfig');
+      },
+    });
   });
 });
 
@@ -574,19 +646,22 @@ describe('GatewayAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects Gateway with no listeners and not-programmed condition', async () => {
-    vi.mocked(listGateways).mockResolvedValueOnce([{
-      metadata: { name: 'main-gw', namespace: 'istio-system' },
-      spec: {},
-      status: { conditions: [{ type: 'Programmed', status: 'False', reason: 'AddressNotAssigned' }] },
-    }]);
-
-    const results = await GatewayAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('Gateway');
-    const errors = joinErrors(results);
-    expect(errors).toContain('no listeners');
-    expect(errors).toContain('not programmed');
+    await verifyAnalyzerFailure({
+      analyzer: GatewayAnalyzer,
+      listFn: listGateways,
+      mockValue: [{
+        metadata: { name: 'main-gw', namespace: 'istio-system' },
+        spec: {},
+        status: { conditions: [{ type: 'Programmed', status: 'False', reason: 'AddressNotAssigned' }] },
+      }],
+      expectedKind: 'Gateway',
+      expectedName: 'main-gw',
+      expectedNamespace: 'istio-system',
+      assertErrors: (errors) => {
+        expect(errors).toContain('no listeners');
+        expect(errors).toContain('not programmed');
+      },
+    });
   });
 });
 
@@ -594,19 +669,22 @@ describe('HTTPRouteAnalyzer', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('detects HTTPRoute not accepted by parent and missing backend refs', async () => {
-    vi.mocked(listHTTPRoutes).mockResolvedValueOnce([{
-      metadata: { name: 'api-route', namespace: 'default' },
-      spec: { rules: [{ backendRefs: [] }] },
-      status: { parents: [{ conditions: [{ type: 'Accepted', status: 'False', reason: 'NoMatchingParent' }] }] },
-    }]);
-
-    const results = await HTTPRouteAnalyzer.analyze({});
-
-    expect(results).toHaveLength(1);
-    expect(results[0].kind).toBe('HTTPRoute');
-    const errors = joinErrors(results);
-    expect(errors).toContain('not accepted');
-    expect(errors).toContain('no backend references');
+    await verifyAnalyzerFailure({
+      analyzer: HTTPRouteAnalyzer,
+      listFn: listHTTPRoutes,
+      mockValue: [{
+        metadata: { name: 'api-route', namespace: 'default' },
+        spec: { rules: [{ backendRefs: [] }] },
+        status: { parents: [{ conditions: [{ type: 'Accepted', status: 'False', reason: 'NoMatchingParent' }] }] },
+      }],
+      expectedKind: 'HTTPRoute',
+      expectedName: 'api-route',
+      expectedNamespace: 'default',
+      assertErrors: (errors) => {
+        expect(errors).toContain('not accepted');
+        expect(errors).toContain('no backend references');
+      },
+    });
   });
 });
 

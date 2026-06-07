@@ -74,28 +74,48 @@ const analyzePodLogs = async (
 };
 
 /**
+ * Checks if a pod is in a non-healthy state.
+ * @param pod The pod object to check.
+ * @returns True if the pod has failed or has not-ready containers.
+ */
+const isPodUnhealthy = (pod: k8s.V1Pod): boolean =>
+  pod.status?.phase === 'Failed' ||
+  (pod.status?.containerStatuses?.some((cs) => !cs.ready) ?? false);
+
+/**
+ * Builds the AnalyzerResult object for a pod with error logs.
+ * @param pod The pod object.
+ * @param errors List of container log errors.
+ * @returns Formatted AnalyzerResult.
+ */
+const buildLogAnalyzerResult = (pod: k8s.V1Pod, errors: Failure[]): AnalyzerResult => ({
+  kind: 'Log',
+  name: pod.metadata?.name ?? 'unknown-pod',
+  namespace: pod.metadata?.namespace ?? 'default',
+  errors,
+});
+
+/**
  * Analyzer implementation that scans Pod container logs for error patterns.
  * Only analyzes pods that are in a non-healthy state.
  */
 export const LogAnalyzer: Analyzer = {
   name: 'Logs',
+  /**
+   * Scans container logs of unhealthy pods.
+   * @param context Analyzer context options.
+   * @returns Array of log analyzer results.
+   */
   async analyze(context: AnalyzerContext): Promise<AnalyzerResult[]> {
     const pods = await listPods(context);
     const results: AnalyzerResult[] = [];
 
     for (const pod of pods) {
-      const isUnhealthy = pod.status?.phase === 'Failed' ||
-        pod.status?.containerStatuses?.some((cs) => !cs.ready);
-      if (!isUnhealthy) continue;
+      if (!isPodUnhealthy(pod)) continue;
 
       const allErrors = await analyzePodLogs(pod, context);
       if (allErrors.length > 0) {
-        results.push({
-          kind: 'Log',
-          name: pod.metadata?.name ?? 'unknown-pod',
-          namespace: pod.metadata?.namespace ?? 'default',
-          errors: allErrors,
-        });
+        results.push(buildLogAnalyzerResult(pod, allErrors));
       }
     }
     return results;

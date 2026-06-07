@@ -111,6 +111,27 @@ export const handleConfig = (res: any): void => {
 };
 
 /**
+ * Route incoming requests to their respective handlers.
+ * @param req The incoming HTTP request.
+ * @param res The HTTP response object.
+ * @param options Server configuration options.
+ */
+export const routeRequest = (req: any, res: any, options: ServerOptions): void => {
+  const url = req.url ?? '';
+  const method = req.method ?? 'GET';
+
+  if (method === 'GET') {
+    if (url === '/health') return handleHealth(res);
+    if (url === '/filters') return handleFilters(res);
+    if (url === '/config') return handleConfig(res);
+  } else if (method === 'POST') {
+    if (url === '/analyze') return handleAnalyze(req, res, options);
+  }
+
+  sendJson(res, 404, { error: 'Not found' });
+};
+
+/**
  * Creates a minimal HTTP server that reuses the CLI analysis engine.
  * Exposes GET /health, POST /analyze, GET /filters, GET /config.
  * @param options Server configuration options.
@@ -119,16 +140,8 @@ export const handleConfig = (res: any): void => {
 export async function createServer(options: ServerOptions): Promise<{ close: () => void; port: number }> {
   const { createServer: createHttpServer } = await import('node:http');
 
-  const server = createHttpServer(async (req, res) => {
-    const url = req.url ?? '';
-    const method = req.method ?? 'GET';
-
-    if (url === '/health' && method === 'GET') return handleHealth(res);
-    if (url === '/analyze' && method === 'POST') return handleAnalyze(req, res, options);
-    if (url === '/filters' && method === 'GET') return handleFilters(res);
-    if (url === '/config' && method === 'GET') return handleConfig(res);
-
-    sendJson(res, 404, { error: 'Not found' });
+  const server = createHttpServer((req, res) => {
+    routeRequest(req, res, options);
   });
 
   return new Promise((resolve) => {

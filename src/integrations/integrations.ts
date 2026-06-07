@@ -70,6 +70,51 @@ interface CustomObjectParams {
 }
 
 /**
+ * Fetches custom objects from the cluster using namespaced or cluster API.
+ */
+const fetchCustomObjects = async (api: any, params: CustomObjectParams) => {
+  const useNamespace = params.context.namespace && params.hasNamespace !== false;
+  if (useNamespace) {
+    return api.listNamespacedCustomObject({
+      group: params.group,
+      version: params.version,
+      namespace: params.context.namespace,
+      plural: params.plural,
+    });
+  }
+  return api.listClusterCustomObject({
+    group: params.group,
+    version: params.version,
+    plural: params.plural,
+  });
+};
+
+/**
+ * Maps a single custom object to an analyzer result array.
+ */
+const mapCustomObjectToResult = (
+  resource: any,
+  params: CustomObjectParams,
+): AnalyzerResult[] => {
+  const errors = params.checkFn(resource);
+  if (!errors.length) return [];
+
+  const result: AnalyzerResult = {
+    kind: params.kind,
+    name: resource.metadata?.name ?? 'unknown',
+    errors,
+  };
+
+  const useNamespace = params.context.namespace && params.hasNamespace !== false;
+  const namespace = resource.metadata?.namespace ?? (useNamespace ? params.context.namespace : undefined);
+  if (namespace) {
+    result.namespace = namespace;
+  }
+
+  return [result];
+};
+
+/**
  * Helper to fetch and analyze custom objects.
  * @param params Configuration parameters.
  * @returns Array of analyzer results.
@@ -77,61 +122,48 @@ interface CustomObjectParams {
 async function analyzeCustomObjects(params: CustomObjectParams): Promise<AnalyzerResult[]> {
   try {
     const api = getCustomObjectsApi(params.context);
-    const response = params.context.namespace && params.hasNamespace !== false
-      ? await api.listNamespacedCustomObject({
-          group: params.group,
-          version: params.version,
-          namespace: params.context.namespace,
-          plural: params.plural,
-        })
-      : await api.listClusterCustomObject({
-          group: params.group,
-          version: params.version,
-          plural: params.plural,
-        });
-
+    const response = await fetchCustomObjects(api, params);
     const items = (response as any)?.items ?? [];
-    return items.flatMap((resource: any) => {
-      const errors = params.checkFn(resource);
-      if (!errors.length) return [];
-      const result: AnalyzerResult = {
-        kind: params.kind,
-        name: resource.metadata?.name ?? 'unknown',
-        errors,
-      };
-      if (resource.metadata?.namespace) {
-        result.namespace = resource.metadata.namespace;
-      } else if (params.context.namespace && params.hasNamespace !== false) {
-        result.namespace = params.context.namespace;
-      }
-      return [result];
-    });
+    return items.flatMap((resource: any) => mapCustomObjectToResult(resource, params));
   } catch {
     return [];
   }
 }
 
+interface CustomObjectAnalyzerConfig {
+  group: string;
+  version: string;
+  plural: string;
+  kind: string;
+  checkFn: (resource: any) => Failure[];
+  hasNamespace?: boolean;
+}
+
 /**
- * KEDA integration analyzer checking ScaledObject health.
+ * Creates a standard custom object analyzer.
  */
-export const KEDAAnalyzer: Analyzer = {
-  name: 'KEDA',
+const createCustomObjectAnalyzer = (config: CustomObjectAnalyzerConfig): Analyzer => ({
+  name: config.kind,
   /**
-   * Performs analysis on KEDA ScaledObject resources.
+   * Performs analysis on custom resources.
    * @param context Analyzer context options.
    * @returns Array of analyzer results.
    */
   async analyze(context: AnalyzerContext): Promise<AnalyzerResult[]> {
-    return analyzeCustomObjects({
-      group: 'keda.sh',
-      version: 'v1alpha1',
-      plural: 'scaledobjects',
-      kind: 'KEDA',
-      context,
-      checkFn: checkKEDAScaledObject,
-    });
+    return analyzeCustomObjects({ ...config, context });
   },
-};
+});
+
+/**
+ * KEDA integration analyzer checking ScaledObject health.
+ */
+export const KEDAAnalyzer = createCustomObjectAnalyzer({
+  group: 'keda.sh',
+  version: 'v1alpha1',
+  plural: 'scaledobjects',
+  kind: 'KEDA',
+  checkFn: checkKEDAScaledObject,
+});
 
 /**
  * Checks Kyverno ClusterPolicy compliance status.
@@ -154,25 +186,14 @@ const checkKyvernoPolicy = (resource: any): Failure[] => {
 /**
  * Kyverno integration analyzer checking ClusterPolicy compliance.
  */
-export const KyvernoAnalyzer: Analyzer = {
-  name: 'Kyverno',
-  /**
-   * Performs analysis on Kyverno ClusterPolicy resources.
-   * @param context Analyzer context options.
-   * @returns Array of analyzer results.
-   */
-  async analyze(context: AnalyzerContext): Promise<AnalyzerResult[]> {
-    return analyzeCustomObjects({
-      group: 'kyverno.io',
-      version: 'v1',
-      plural: 'clusterpolicies',
-      kind: 'Kyverno',
-      context,
-      checkFn: checkKyvernoPolicy,
-      hasNamespace: false,
-    });
-  },
-};
+export const KyvernoAnalyzer = createCustomObjectAnalyzer({
+  group: 'kyverno.io',
+  version: 'v1',
+  plural: 'clusterpolicies',
+  kind: 'Kyverno',
+  checkFn: checkKyvernoPolicy,
+  hasNamespace: false,
+});
 
 /**
  * Checks Prometheus ServiceMonitor configuration.
@@ -189,24 +210,13 @@ const checkPrometheusServiceMonitor = (resource: any): Failure[] => {
 /**
  * Prometheus integration analyzer checking ServiceMonitor configuration.
  */
-export const PrometheusAnalyzer: Analyzer = {
-  name: 'Prometheus',
-  /**
-   * Performs analysis on Prometheus ServiceMonitor resources.
-   * @param context Analyzer context options.
-   * @returns Array of analyzer results.
-   */
-  async analyze(context: AnalyzerContext): Promise<AnalyzerResult[]> {
-    return analyzeCustomObjects({
-      group: 'monitoring.coreos.com',
-      version: 'v1',
-      plural: 'servicemonitors',
-      kind: 'Prometheus',
-      context,
-      checkFn: checkPrometheusServiceMonitor,
-    });
-  },
-};
+export const PrometheusAnalyzer = createCustomObjectAnalyzer({
+  group: 'monitoring.coreos.com',
+  version: 'v1',
+  plural: 'servicemonitors',
+  kind: 'Prometheus',
+  checkFn: checkPrometheusServiceMonitor,
+});
 
 /**
  * Registers all available integration analyzers.
