@@ -26,8 +26,8 @@ export const getKubeConfig = (options: KubernetesClientOptions = {}): k8s.KubeCo
       if (options.kubecontext) {
         kc.setCurrentContext(options.kubecontext);
       }
-    } catch (e) {
-      // Failed to load default config
+    } catch (e: any) {
+      throw new Error(`Failed to load kubeconfig: ${e?.message || String(e)}`);
     }
     clientKey = nextKey;
     k8sApi = null;
