@@ -48,14 +48,14 @@ const healthColor = (status: string): string => {
   return chalk.yellow(status);
 };
 
-const fetchHealthRows = async (target: string): Promise<(string | number)[][]> => {
+const fetchHealthRows = async (target: string, options?: { forceAlert?: boolean }): Promise<(string | number)[][]> => {
   const rows: (string | number)[][] = [];
   const shouldFetchContainers = target === 'all' || target === 'containers';
   const shouldFetchPods = target === 'all' || target === 'pods';
 
   const [containerResult, podResult] = await Promise.allSettled([
-    shouldFetchContainers ? getRunningContainers() : Promise.resolve([]),
-    shouldFetchPods ? getRunningPods() : Promise.resolve([]),
+    shouldFetchContainers ? getRunningContainers({ forceAlert: options?.forceAlert }) : Promise.resolve([]),
+    shouldFetchPods ? getRunningPods({ forceAlert: options?.forceAlert }) : Promise.resolve([]),
   ]);
 
   if (shouldFetchContainers) {
@@ -150,7 +150,7 @@ export const showHealth = async (target: string, options: HealthOptions = {}): P
         return;
       }
 
-      const rows = await fetchHealthRows(target);
+      const rows = await fetchHealthRows(target, { forceAlert: true });
 
       // Clear terminal screen
       process.stdout.write('\x1Bc');
@@ -180,7 +180,7 @@ export const showHealth = async (target: string, options: HealthOptions = {}): P
     await poll();
   } else {
     const spinner = createSpinner(`Checking ${target} health...`).start();
-    const rows = await fetchHealthRows(target);
+    const rows = await fetchHealthRows(target, { forceAlert: true });
     spinner.stop();
 
     if (rows.length === 0) {
