@@ -51,10 +51,10 @@ describe('alerts monitoring', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  it('should respect cooldown and suppress alert on subsequent invocations within cooldown window', async () => {
-    const alertId = 'container:test-cooldown:failure';
+  it('should respect cooldown but bypass it if the force option is true', async () => {
+    const alertId = 'container:test-flow:failure';
     
-    // First trigger - should send
+    // 1. First trigger - should send
     await triggerAlert({
       id: alertId,
       message: 'Container crashed first time',
@@ -63,7 +63,7 @@ describe('alerts monitoring', () => {
     });
     expect(mockFetch).toHaveBeenCalledTimes(1);
     
-    // Second trigger within cooldown - should be suppressed
+    // 2. Second trigger within cooldown without force - should be suppressed
     await triggerAlert({
       id: alertId,
       message: 'Container crashed second time',
@@ -72,24 +72,11 @@ describe('alerts monitoring', () => {
     });
     // Call count should still be 1
     expect(mockFetch).toHaveBeenCalledTimes(1);
-  });
 
-  it('should bypass cooldown and trigger alert on subsequent invocations if force option is true', async () => {
-    const alertId = 'container:test-force:failure';
-    
-    // First trigger - should send
+    // 3. Third trigger within cooldown with force: true - should send regardless of cooldown
     await triggerAlert({
       id: alertId,
-      message: 'Container crashed first time',
-      type: 'container',
-      severity: 'critical',
-    });
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    
-    // Second trigger with force: true - should send regardless of cooldown
-    await triggerAlert({
-      id: alertId,
-      message: 'Container crashed second time',
+      message: 'Container crashed third time',
       type: 'container',
       severity: 'critical',
     }, { force: true });
