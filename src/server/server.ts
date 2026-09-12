@@ -34,10 +34,20 @@ interface AnalyzeRequestBody {
  * @returns Parsed body string.
  */
 export const readBody = (req: any): Promise<string> =>
-  new Promise((resolve) => {
+  new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+    let length = 0;
+    req.on('data', (chunk: Buffer) => {
+      length += chunk.length;
+      if (length > 1024 * 1024) { // 1MB payload limit to prevent DoS
+        req.destroy();
+        reject(new Error('Payload too large'));
+        return;
+      }
+      body += chunk.toString();
+    });
     req.on('end', () => resolve(body));
+    req.on('error', reject);
   });
 
 /**
@@ -47,7 +57,12 @@ export const readBody = (req: any): Promise<string> =>
  * @param data Response payload.
  */
 export const sendJson = (res: any, status: number, data: unknown): void => {
-  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Content-Security-Policy': "default-src 'none'",
+  });
   res.end(JSON.stringify(data));
 };
 
