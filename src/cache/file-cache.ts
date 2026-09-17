@@ -29,6 +29,24 @@ const ensureCacheDir = (dir: string): void => {
 };
 
 /**
+ * Validates that the requested cache key does not perform path traversal.
+ * @param cacheDir Absolute path to the cache directory.
+ * @param key Cache key.
+ * @returns The resolved safe file path.
+ * @throws Error if path traversal is detected.
+ */
+const getSafeFilePath = (cacheDir: string, key: string): string => {
+  const resolvedBase = path.resolve(cacheDir);
+  const resolvedTarget = path.resolve(cacheDir, key);
+
+  if (!resolvedTarget.startsWith(resolvedBase + path.sep) && resolvedTarget !== resolvedBase) {
+    throw new Error('Security Error: Path traversal detected in cache key');
+  }
+
+  return resolvedTarget;
+};
+
+/**
  * Safely reads a file as UTF-8, returning null if the file is missing or corrupt.
  * @param filePath Absolute path to the file.
  * @returns File contents or null.
@@ -65,7 +83,7 @@ export class FileCacheProvider implements CacheProvider {
    */
   async store(key: string, data: string): Promise<void> {
     ensureCacheDir(this.cacheDir);
-    const filePath = path.join(this.cacheDir, key);
+    const filePath = getSafeFilePath(this.cacheDir, key);
     fs.writeFileSync(filePath, data, 'utf-8');
   }
 
@@ -75,8 +93,12 @@ export class FileCacheProvider implements CacheProvider {
    * @returns The cached string or null.
    */
   async load(key: string): Promise<string | null> {
-    const filePath = path.join(this.cacheDir, key);
-    return safeReadFile(filePath);
+    try {
+      const filePath = getSafeFilePath(this.cacheDir, key);
+      return safeReadFile(filePath);
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -102,7 +124,7 @@ export class FileCacheProvider implements CacheProvider {
    * @param key Cache key to remove.
    */
   async remove(key: string): Promise<void> {
-    const filePath = path.join(this.cacheDir, key);
+    const filePath = getSafeFilePath(this.cacheDir, key);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
@@ -114,7 +136,12 @@ export class FileCacheProvider implements CacheProvider {
    * @returns True if the file exists.
    */
   async exists(key: string): Promise<boolean> {
-    return fs.existsSync(path.join(this.cacheDir, key));
+    try {
+      const filePath = getSafeFilePath(this.cacheDir, key);
+      return fs.existsSync(filePath);
+    } catch {
+      return false;
+    }
   }
 
   /**
