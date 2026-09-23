@@ -59,19 +59,16 @@ export class FileCacheProvider implements CacheProvider {
   }
 
   /**
-   * Validates and returns a safe file path within the cache directory.
-   * @param key The cache key.
-   * @returns Safe absolute path to the cache file.
-   * @throws Error if a path traversal attempt is detected.
+   * Gets a safe file path ensuring it does not escape the cache directory (Path Traversal protection).
+   * @param key Cache key.
+   * @returns Absolute path to the file.
    */
   private getSafeFilePath(key: string): string {
-    const resolvedBase = path.resolve(this.cacheDir);
+    const resolvedCacheDir = path.resolve(this.cacheDir);
     const resolvedPath = path.resolve(this.cacheDir, key);
-
-    if (!resolvedPath.startsWith(resolvedBase + path.sep) && resolvedPath !== resolvedBase) {
-      throw new Error(`Path traversal attempt detected for key: ${key}`);
+    if (!resolvedPath.startsWith(resolvedCacheDir + path.sep) && resolvedPath !== resolvedCacheDir) {
+      throw new Error(`Invalid cache key: path traversal detected for key '${key}'`);
     }
-
     return resolvedPath;
   }
 
@@ -92,12 +89,8 @@ export class FileCacheProvider implements CacheProvider {
    * @returns The cached string or null.
    */
   async load(key: string): Promise<string | null> {
-    try {
-      const filePath = this.getSafeFilePath(key);
-      return safeReadFile(filePath);
-    } catch {
-      return null;
-    }
+    const filePath = this.getSafeFilePath(key);
+    return safeReadFile(filePath);
   }
 
   /**
@@ -108,7 +101,7 @@ export class FileCacheProvider implements CacheProvider {
     ensureCacheDir(this.cacheDir);
     const files = fs.readdirSync(this.cacheDir);
     return files.map((file) => {
-      const filePath = path.join(this.cacheDir, file);
+      const filePath = this.getSafeFilePath(file);
       const stat = fs.statSync(filePath);
       return {
         key: file,
@@ -135,12 +128,7 @@ export class FileCacheProvider implements CacheProvider {
    * @returns True if the file exists.
    */
   async exists(key: string): Promise<boolean> {
-    try {
-      const filePath = this.getSafeFilePath(key);
-      return fs.existsSync(filePath);
-    } catch {
-      return false;
-    }
+    return fs.existsSync(this.getSafeFilePath(key));
   }
 
   /**

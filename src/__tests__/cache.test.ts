@@ -70,18 +70,12 @@ describe('File Cache Provider', () => {
     expect(result).toBeNull();
   });
 
-  it('prevents path traversal attempts', async () => {
-    const maliciousKey = '../../../../../etc/passwd';
-
-    await expect(cache.store(maliciousKey, 'hack')).rejects.toThrow('Path traversal attempt detected');
-
-    const loadResult = await cache.load(maliciousKey);
-    expect(loadResult).toBeNull();
-
-    const existsResult = await cache.exists(maliciousKey);
-    expect(existsResult).toBe(false);
-
-    await expect(cache.remove(maliciousKey)).rejects.toThrow('Path traversal attempt detected');
+  it('prevents path traversal vulnerabilities for cache keys', async () => {
+    const maliciousKey = '../../../etc/passwd';
+    await expect(cache.store(maliciousKey, 'data')).rejects.toThrow(/path traversal/);
+    await expect(cache.load(maliciousKey)).rejects.toThrow(/path traversal/);
+    await expect(cache.remove(maliciousKey)).rejects.toThrow(/path traversal/);
+    await expect(cache.exists(maliciousKey)).rejects.toThrow(/path traversal/);
   });
 
   it.each([
