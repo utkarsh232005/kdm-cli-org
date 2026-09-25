@@ -6,6 +6,7 @@ import type { AnalysisOptions } from '../analysis/types';
 /** Options for starting the HTTP server. */
 export interface ServerOptions {
   port: number;
+  host?: string;
   metricsPort?: number;
   backend?: string;
   filter?: string[];
@@ -167,6 +168,11 @@ export const routeRequest = (req: any, res: any, options: ServerOptions): void =
   }
 
   if (method === 'POST' && pathname === '/analyze') {
+    const contentType = req.headers['content-type']?.toLowerCase() || '';
+    if (!contentType.includes('application/json')) {
+      sendJson(res, 415, { error: 'Unsupported Media Type: Content-Type must be application/json' });
+      return;
+    }
     handleAnalyze(req, res, options);
     return;
   }
@@ -225,7 +231,8 @@ export async function createServer(options: ServerOptions): Promise<{ close: () 
   });
 
   return new Promise((resolve) => {
-    server.listen(options.port, () => {
+    const host = options.host || '127.0.0.1';
+    server.listen(options.port, host, () => {
       const address = server.address();
       const port = typeof address === 'string' ? 0 : (address?.port ?? 0);
       resolve({

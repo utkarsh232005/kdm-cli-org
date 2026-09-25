@@ -50,6 +50,7 @@ export const registerServeCommand = (program: Command) => {
     .command('serve')
     .description('Start KDM in server mode (HTTP or MCP)')
     .option('-p, --port <port>', 'HTTP server port', '8080')
+    .option('-H, --host <host>', 'HTTP server host', '127.0.0.1')
     .option('--metrics-port <port>', 'Metrics server port')
     .option('-b, --backend <backend>', 'Default AI backend provider')
     .option('--http', 'Force HTTP mode (default)')

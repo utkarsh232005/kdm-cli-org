@@ -59,6 +59,7 @@ const Dashboard: React.FC<{initialOptions: ServerOptions}> = ({initialOptions}) 
     try {
       const srv = await createServer({
         port,
+        host: initialOptions.host,
         backend: initialOptions.backend,
         filter: initialOptions.filter,
         onRequest: (info) => {
@@ -138,7 +139,7 @@ const Dashboard: React.FC<{initialOptions: ServerOptions}> = ({initialOptions}) 
       <Box>
         <Box flexDirection="column" marginRight={4}>
           <Text bold>kdm Serve Dashboard</Text>
-          <Text>Host: {chalk.green('localhost')}</Text>
+          <Text>Host: {chalk.green(initialOptions.host || '127.0.0.1')}</Text>
           <Text>Port: {chalk.yellow(String(port))} {running ? <Text color="green">(running)</Text> : <Text color="red">(stopped)</Text>}</Text>
           <Text>Mode: HTTP</Text>
         </Box>
