@@ -14,3 +14,7 @@
 **Vulnerability:** The local CLI server exposed `POST /analyze` without CSRF protection and sent sensitive configuration data without `Cache-Control: no-store` headers.
 **Learning:** Local CLIs exposing HTTP endpoints for Dashboards/MCP are vulnerable to CSRF via simple requests if `Content-Type` is not strictly enforced.
 **Prevention:** Always strictly validate `Content-Type: application/json` to trigger preflight requests, and add `Cache-Control: no-store` to all JSON API responses.
+## 2024-05-18 - Switch to execFile to Prevent Command Injection
+**Vulnerability:** Command injection due to unsanitized input passed to `child_process.exec` in internal minikube client.
+**Learning:** `exec` inherently runs through a shell, allowing metacharacters to execute arbitrary commands if input is not completely controlled.
+**Prevention:** Always use `child_process.execFile` or `child_process.spawn` without a shell when executing external binaries for internal commands.
