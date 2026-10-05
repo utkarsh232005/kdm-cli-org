@@ -19,3 +19,7 @@
 **Vulnerability:** Used `exec` to execute internal minikube commands which can be vulnerable to command injection if user inputs are ever appended.
 **Learning:** Internal system commands should prefer `execFile` or `spawn` instead of `exec` to prevent command injection risks.
 **Prevention:** Always use `execFile` or `spawn` for known internal commands, reserving `exec` only for user-configurable custom analyzers.
+## 2026-10-05 - [Missing Request Timeout Configuration]
+**Vulnerability:** The application was making external API calls using `fetch` in `CustomRestAIClient` and custom HTTP webhook analyzers without any timeout configuration.
+**Learning:** In Node.js, `fetch` calls do not have a default timeout and can hang indefinitely if the external service fails to respond, leading to potential denial of service or resource exhaustion in the CLI/server process.
+**Prevention:** Always use `AbortSignal.timeout()` when making outbound `fetch` requests to untrusted or external services to guarantee completion or bounded failure.
