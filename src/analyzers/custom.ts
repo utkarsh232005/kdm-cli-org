@@ -52,10 +52,12 @@ async function runHTTPAnalyzer(
   context: AnalyzerContext,
 ): Promise<AnalyzerResult[]> {
   try {
+    // Prevent Denial of Service (DoS) by enforcing a strict 30-second timeout on custom HTTP analyzer webhooks.
     const response = await fetch(config.url!, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ namespace: context.namespace }),
+      signal: AbortSignal.timeout(30000),
     });
     if (!response.ok) {
       const statusInfo = response.statusText ? `${response.status} ${response.statusText}` : `${response.status}`;
