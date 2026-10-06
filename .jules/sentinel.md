@@ -19,3 +19,7 @@
 **Vulnerability:** Used `exec` to execute internal minikube commands which can be vulnerable to command injection if user inputs are ever appended.
 **Learning:** Internal system commands should prefer `execFile` or `spawn` instead of `exec` to prevent command injection risks.
 **Prevention:** Always use `execFile` or `spawn` for known internal commands, reserving `exec` only for user-configurable custom analyzers.
+## 2023-11-20 - [MEDIUM] Missing Timeout in Custom HTTP Analyzer
+**Vulnerability:** The `runHTTPAnalyzer` in `src/analyzers/custom.ts` called user-configured webhook URLs without a timeout, creating a DoS risk if the external service hung or responded slowly.
+**Learning:** Native `fetch` calls do not enforce a timeout by default. When hitting external endpoints, especially user-provided URLs, it is essential to impose a timeout.
+**Prevention:** Always provide an `AbortSignal.timeout()` when making `fetch` requests to external services.
