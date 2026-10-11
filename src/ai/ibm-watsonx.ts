@@ -33,6 +33,7 @@ export class IBMWatsonxAIClient implements AIClient {
     const url = `${this.baseUrl}/ml/v1/text/generation?version=2024-03-14`;
     const response = await fetch(url, {
       method: 'POST',
+      signal: AbortSignal.timeout(30000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({
         model_id: this.model,

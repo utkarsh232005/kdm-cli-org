@@ -37,6 +37,7 @@ export class AzureOpenAIClient implements AIClient {
     const url = `${this.baseUrl}/openai/deployments/${this.model}/chat/completions?api-version=2024-02-01`;
     const response = await fetch(url, {
       method: 'POST',
+      signal: AbortSignal.timeout(30000),
       headers: {
         'Content-Type': 'application/json',
         'api-key': this.apiKey,

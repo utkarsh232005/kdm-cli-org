@@ -36,6 +36,7 @@ export class GoogleGeminiAIClient implements AIClient {
     const url = `${this.baseUrl}/v1beta/models/${this.model}:generateContent`;
     const response = await fetch(url, {
       method: 'POST',
+      signal: AbortSignal.timeout(30000),
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': this.apiKey,

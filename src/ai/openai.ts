@@ -76,6 +76,7 @@ export class OpenAIAIClient implements AIClient {
 
     const res = await fetch(url, {
       method: 'POST',
+      signal: AbortSignal.timeout(30000),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.config.password}`,
