@@ -29,6 +29,7 @@ export class CohereAIClient implements AIClient {
     const url = 'https://api.cohere.ai/v1/chat';
     const response = await fetch(url, {
       method: 'POST',
+      signal: AbortSignal.timeout(30000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({ message: prompt, model: this.model, temperature: this.temperature }),
     });
