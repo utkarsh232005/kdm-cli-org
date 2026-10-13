@@ -82,6 +82,7 @@ export class OpenAIAIClient implements AIClient {
         ...this.config.customHeaders,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000), // Security: Prevent DoS from hanging connection
     });
 
     if (!res.ok) {
