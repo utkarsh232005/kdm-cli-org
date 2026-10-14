@@ -23,3 +23,7 @@
 **Vulnerability:** Unbounded fetch requests in custom HTTP analyzers
 **Learning:** External webhook analyzers (`config.url`) lacked connection timeouts. As these URLs might be user-configured or target external services, hanging connections could cause the CLI process to wait indefinitely, resulting in a Denial of Service (DoS) vulnerability.
 **Prevention:** Always provide an `AbortSignal.timeout()` when making native `fetch` requests to external services, especially those provided by users.
+## 2024-10-15 - [Medium] Missing timeout on external Discord webhook
+**Vulnerability:** The background monitoring alert process (`triggerAlert` in `src/monitor/alerts.ts`) made a `fetch` request to a Discord webhook without a timeout mechanism, which could lead to DoS by memory/connection exhaustion if the external API hung.
+**Learning:** External webhook requests in background tasks must explicitly set timeouts, since the default Node.js `fetch` might hang indefinitely, stalling asynchronous workflows.
+**Prevention:** Always provide an `AbortSignal.timeout()` parameter when making native `fetch` requests to external services, especially those executed in a non-interactive/background capacity.

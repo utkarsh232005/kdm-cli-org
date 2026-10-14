@@ -34,6 +34,7 @@ const sendDiscordNotification = async (alert: Alert) => {
           footer: { text: 'KDM Monitoring' },
         }],
       }),
+      signal: AbortSignal.timeout(5000),
     });
   } catch (error) {
     logger.error(`Discord notification failed: ${(error as Error).message}`);
