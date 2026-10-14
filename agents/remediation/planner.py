@@ -80,10 +80,10 @@ def _target_from_bundle_dict(bundle: Dict[str, Any]) -> Optional[WorkloadTargetI
     td = bundle.get("target")
     if not isinstance(td, dict):
         return None
-    kind = td.get("workload_kind", td.get("workloadKind", "deployment"))
-    name = td.get("workload_name", td.get("workloadName", "workload"))
+    kind = td.get("workload_kind") or td.get("workloadKind") or td.get("kind") or "deployment"
+    name = td.get("workload_name") or td.get("workloadName") or td.get("name") or "workload"
     ns = td.get("namespace", "default")
-    c_name = td.get("container_name", td.get("containerName"))
+    c_name = td.get("container_name") or td.get("containerName") or td.get("container")
     return WorkloadTargetInfo(
         workload_kind=str(kind).strip().lower(),
         workload_name=str(name).strip(),
@@ -195,20 +195,30 @@ def _extract_consensus_text(consensus: Any) -> str:
 
 def _extract_bundle_text(bundle: Optional[Any]) -> str:
     """Extract raw container status text from evidence bundle."""
-    if bundle is None or not hasattr(bundle, "get"):
+    if bundle is None:
+        return ""
+    if not hasattr(bundle, "get"):
         return ""
     status_item = bundle.get("ev.pod.container.status")
-    return str(status_item.data) if status_item and status_item.data else ""
+    if status_item is None:
+        return ""
+    data = getattr(status_item, "data", status_item)
+    return str(data) if data else ""
 
 
 def _extract_bundle_memory(bundle: Optional[Any]) -> Optional[str]:
     """Retrieve memory limit data from evidence bundle if present."""
-    if bundle is None or not hasattr(bundle, "get"):
+    if bundle is None:
+        return None
+    if not hasattr(bundle, "get"):
         return None
     item = bundle.get("ev.resources.limits")
-    if not item or not isinstance(item.data, dict):
+    if item is None:
         return None
-    mem = item.data.get("memory")
+    data = getattr(item, "data", item)
+    if not isinstance(data, dict):
+        return None
+    mem = data.get("memory")
     return str(mem) if mem else None
 
 

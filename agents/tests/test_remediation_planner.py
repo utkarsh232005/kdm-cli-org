@@ -326,10 +326,11 @@ class TestRemediationPlanner(unittest.TestCase):
         """Verify planner accepts dictionary representations of consensus and bundle."""
         bundle_dict = {
             "target": {
-                "workload_name": "cart-service",
+                "name": "cart-service",
                 "namespace": "ecommerce",
-                "workload_kind": "deployment",
-            }
+                "kind": "deployment",
+            },
+            "ev.resources.limits": {"memory": "256Mi"},
         }
         consensus_dict = {
             "root_cause": "Container terminated with exit code 137 (OOMKilled).",
@@ -339,6 +340,7 @@ class TestRemediationPlanner(unittest.TestCase):
         self.assertEqual(plan.target_workload, "cart-service")
         self.assertIn("ecommerce", plan.rollback_command or "")
         self.assertEqual(plan.risk_level, "low")
+        self.assertIn("512Mi", plan.steps[0].command)
 
     def test_create_plan_without_bundle_graceful_fallback(self) -> None:
         """Verify planner functions cleanly when bundle is omitted."""
