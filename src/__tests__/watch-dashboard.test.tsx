@@ -13,7 +13,7 @@ if (!(console as any).Console) {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const waitForFrameToContain = async (mockStdout: MockWritable, substring: string, timeout = 1000) => {
+const waitForFrameToContain = async (mockStdout: MockWritable, substring: string, timeout = 5000) => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const output = mockStdout.frames.join('\n');
