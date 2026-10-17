@@ -45,7 +45,7 @@ export class CustomRestAIClient implements AIClient {
     };
 
     const res = await fetch(url, {
-      method: 'POST',
+      method: 'POST', signal: AbortSignal.timeout(30000),
       headers,
       body: JSON.stringify(body),
     });
