@@ -30,7 +30,7 @@ export class AmazonBedrockAIClient implements AIClient {
   async getCompletion(prompt: string): Promise<string> {
     const url = `${this.baseUrl}/model/${this.model}/invoke`;
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'POST', signal: AbortSignal.timeout(30000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({
         inputText: prompt,
