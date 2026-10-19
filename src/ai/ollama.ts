@@ -52,6 +52,7 @@ export class OllamaAIClient implements AIClient {
 
     const res = await fetch(url, {
       method: 'POST',
+      signal: AbortSignal.timeout(60000),
       headers: {
         'Content-Type': 'application/json',
         ...this.config.customHeaders,

@@ -50,6 +50,7 @@ async function runHTTPAnalyzer(
   try {
     const response = await fetch(config.url!, {
       method: 'POST',
+      signal: AbortSignal.timeout(10000),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ namespace: context.namespace }),
     });
