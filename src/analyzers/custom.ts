@@ -52,6 +52,7 @@ async function runHTTPAnalyzer(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ namespace: context.namespace }),
+      signal: AbortSignal.timeout(10000),
     });
     const data = await response.json();
     return Array.isArray(data) ? data as AnalyzerResult[] : [data as AnalyzerResult];
