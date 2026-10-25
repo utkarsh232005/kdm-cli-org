@@ -72,7 +72,7 @@ export class AnthropicAIClient implements AIClient {
     });
 
     const res = await fetch(url, {
-      method: 'POST',
+      method: 'POST', signal: AbortSignal.timeout(60000),
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': this.config.password!,
