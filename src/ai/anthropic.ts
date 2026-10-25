@@ -72,8 +72,7 @@ export class AnthropicAIClient implements AIClient {
     });
 
     const res = await fetch(url, {
-      method: 'POST',
-      signal: AbortSignal.timeout(60000), // Security: Prevent DoS from hanging connection
+      method: 'POST', signal: AbortSignal.timeout(60000),
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': this.config.password!,

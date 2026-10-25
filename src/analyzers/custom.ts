@@ -49,8 +49,7 @@ async function runHTTPAnalyzer(
 ): Promise<AnalyzerResult[]> {
   try {
     const response = await fetch(config.url!, {
-      method: 'POST',
-      signal: AbortSignal.timeout(30000), // Security: Prevent DoS from hanging connection
+      method: 'POST', signal: AbortSignal.timeout(30000),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ namespace: context.namespace }),
     });

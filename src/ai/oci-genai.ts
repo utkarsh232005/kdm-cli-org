@@ -32,8 +32,7 @@ export class OCIGenAIClient implements AIClient {
   async getCompletion(prompt: string): Promise<string> {
     const url = `${this.baseUrl}/20231130/actions/generateText`;
     const response = await fetch(url, {
-      method: 'POST',
-      signal: AbortSignal.timeout(60000), // Security: Prevent DoS from hanging connection
+      method: 'POST', signal: AbortSignal.timeout(60000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({
         compartmentId: this.compartmentId,
