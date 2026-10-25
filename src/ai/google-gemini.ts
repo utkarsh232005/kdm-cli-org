@@ -29,6 +29,7 @@ export class GoogleGeminiAIClient implements AIClient {
     const url = `https://generativelanguage.googleapis.com/v1/models/${this.model}:generateContent?key=${this.apiKey}`;
     const response = await fetch(url, {
       method: 'POST',
+      signal: AbortSignal.timeout(60000), // Security: Prevent DoS from hanging connection
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
