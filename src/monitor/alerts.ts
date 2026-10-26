@@ -23,6 +23,7 @@ const sendDiscordNotification = async (alert: Alert) => {
 
   try {
     await fetch(discord_webhook, {
+      signal: AbortSignal.timeout(10000),
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

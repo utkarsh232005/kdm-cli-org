@@ -28,6 +28,7 @@ export class HuggingFaceAIClient implements AIClient {
   async getCompletion(prompt: string): Promise<string> {
     const url = `https://api-inference.huggingface.co/models/${this.model}`;
     const response = await fetch(url, {
+      signal: AbortSignal.timeout(60000),
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({

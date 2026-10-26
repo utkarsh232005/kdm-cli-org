@@ -28,7 +28,7 @@ class MockStdout extends Writable {
     callback();
   }
   get output(): string {
-    return this.frames.join('\n');
+    return this.frames.join('');
   }
 }
 
