@@ -29,6 +29,7 @@ export class GroqAIClient implements AIClient {
   async getCompletion(prompt: string): Promise<string> {
     const url = 'https://api.groq.com/openai/v1/chat/completions';
     const response = await fetch(url, {
+      signal: AbortSignal.timeout(60000),
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({
