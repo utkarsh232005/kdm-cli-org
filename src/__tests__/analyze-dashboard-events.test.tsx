@@ -54,13 +54,13 @@ class MockStdin extends Readable {
 const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 2500) => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const output = mockStdout.frames.join('\n');
+    const output = mockStdout.frames.join('');
     if (output.includes(substring)) {
       return;
     }
     await sleep(20);
   }
-  const lastOutput = mockStdout.frames.join('\n');
+  const lastOutput = mockStdout.frames.join('');
   throw new Error(`Timed out waiting for "${substring}" in stdout frames. Output was:\n${lastOutput}`);
 };
 
@@ -188,7 +188,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
           { stdout: mockStdout as any }
         );
 
-        const output = mockStdout.frames.join('\n');
+        const output = mockStdout.frames.join('');
         expect(output).toContain(expectedIcon);
         expect(output).toContain(expectedRoleIcon);
         expect(output).toContain(`${name}:`);
@@ -204,7 +204,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
         stdout: mockStdout as any,
       });
 
-      const output = mockStdout.frames.join('\n');
+      const output = mockStdout.frames.join('');
       expect(output).toBe('');
       unmount();
     });
@@ -214,7 +214,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
         stdout: mockStdout as any,
       });
 
-      const output = mockStdout.frames.join('\n');
+      const output = mockStdout.frames.join('');
       expect(output).toContain('⚡ Active Tool: None (idle)');
       unmount();
     });
@@ -233,7 +233,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
         { stdout: mockStdout as any }
       );
 
-      const output = mockStdout.frames.join('\n');
+      const output = mockStdout.frames.join('');
       expect(output).toContain('⚡ Active Tool:');
       expect(output).toContain('[Config Agent]');
       expect(output).toContain('get_deployment_spec(checkout-api)');
@@ -255,7 +255,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
         { stdout: mockStdout as any }
       );
 
-      const output = mockStdout.frames.join('\n');
+      const output = mockStdout.frames.join('');
       expect(output).toContain('⚡ Active Tool:');
       expect(output).toContain('[Runtime Agent]');
       expect(output).toContain('get_container_logs(pod=checkout-api, tail=50)');
@@ -271,7 +271,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
         { stdout: mockStdout as any }
       );
 
-      const output = mockStdout.frames.join('\n');
+      const output = mockStdout.frames.join('');
       expect(output).toContain('Root Cause:');
       expect(output).toContain('[HIGH CONFIDENCE]');
       expect(output).toContain('Detected Exit Code 137 (OOMKilled)');
@@ -293,7 +293,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
         { stdout: mockStdout as any }
       );
 
-      const output = mockStdout.frames.join('\n');
+      const output = mockStdout.frames.join('');
       expect(output).toContain('Root Cause');
       expect(output).toContain('Node pressure');
       expect(output).toContain('Recommended Remediation:');
@@ -439,7 +439,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       await waitForFrame(mockStdout, 'get_deployment_spec(checkout-api)');
 
       // Verify active tool panel and duration
-      const liveOutput = mockStdout.frames.join('\n');
+      const liveOutput = mockStdout.frames.join('');
       expect(liveOutput).toContain('⚡ Active Tool:');
       expect(liveOutput).toContain('[Config Agent]');
       expect(liveOutput).toContain('get_deployment_spec(checkout-api)');
@@ -452,7 +452,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       await waitForFrame(mockStdout, '[HIGH CONFIDENCE]');
       await waitForFrame(mockStdout, 'Increase container memory limit to 512Mi');
 
-      const finalOutput = mockStdout.frames.join('\n');
+      const finalOutput = mockStdout.frames.join('');
       expect(finalOutput).toContain('Detected Exit Code 137 (OOMKilled)');
       expect(finalOutput).toContain('kubectl set resources deployment checkout-api');
       expect(finalOutput).toContain('--limits=memory=512Mi');
