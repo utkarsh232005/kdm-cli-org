@@ -32,7 +32,7 @@ class MockStdout extends Writable {
   rows = 40;
   _write(chunk: any, encoding: any, callback: (error?: Error | null) => void) {
     const raw = chunk.toString();
-    const clean = raw.replace(/\x1b\[\?2026l/g, '').replace(/\x1b\[\?25[hl]/g, '');
+    const clean = raw.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
     this.frames.push(clean);
     callback();
   }
