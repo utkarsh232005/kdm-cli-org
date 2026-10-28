@@ -30,6 +30,7 @@ export class GoogleVertexAIClient implements AIClient {
   async getCompletion(prompt: string): Promise<string> {
     const url = `${this.baseUrl}/v1/projects/-/locations/-/publishers/google/models/${this.model}:generateContent`;
     const response = await fetch(url, {
+      signal: AbortSignal.timeout(60000),
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({

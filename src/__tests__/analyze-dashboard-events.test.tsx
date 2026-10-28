@@ -31,7 +31,9 @@ class MockStdout extends Writable {
   columns = 120;
   rows = 40;
   _write(chunk: any, encoding: any, callback: (error?: Error | null) => void) {
-    this.frames.push(chunk.toString());
+    const raw = chunk.toString();
+    const clean = raw.replace(/[\u001b\u009b]\[[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+    this.frames.push(clean);
     callback();
   }
 }
