@@ -31,6 +31,7 @@ export class CohereAIClient implements AIClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({ message: prompt, model: this.model, temperature: this.temperature }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) {
       throw new Error(`Cohere API call failed with status ${response.status}: ${response.statusText}`);

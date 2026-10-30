@@ -34,6 +34,7 @@ export class HuggingFaceAIClient implements AIClient {
         inputs: prompt,
         parameters: { temperature: this.temperature, max_new_tokens: 1024 },
       }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) {
       throw new Error(`Hugging Face API call failed with status ${response.status}: ${response.statusText}`);

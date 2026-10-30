@@ -36,6 +36,7 @@ export class GoogleVertexAIClient implements AIClient {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { temperature: this.temperature },
       }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) {
       throw new Error(`Google Vertex API call failed with status ${response.status}: ${response.statusText}`);

@@ -36,6 +36,7 @@ export class AmazonBedrockAIClient implements AIClient {
         inputText: prompt,
         textGenerationConfig: { temperature: this.temperature },
       }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) {
       throw new Error(`Amazon Bedrock API call failed with status ${response.status}: ${response.statusText}`);

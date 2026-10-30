@@ -44,6 +44,7 @@ export class OCIGenAIClient implements AIClient {
           maxTokens: 1024,
         },
       }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) {
       throw new Error(`OCI GenAI API call failed with status ${response.status}: ${response.statusText}`);

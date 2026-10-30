@@ -36,6 +36,7 @@ export class GroqAIClient implements AIClient {
         messages: [{ role: 'user', content: prompt }],
         temperature: this.temperature,
       }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) {
       throw new Error(`Groq API call failed with status ${response.status}: ${response.statusText}`);
