@@ -57,6 +57,7 @@ export class OllamaAIClient implements AIClient {
         ...this.config.customHeaders,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(60000),
     });
 
     if (!res.ok) {

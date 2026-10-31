@@ -40,6 +40,7 @@ export class IBMWatsonxAIClient implements AIClient {
         project_id: this.projectId,
         parameters: { temperature: this.temperature, max_new_tokens: 1024 },
       }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) {
       throw new Error(`IBM watsonx API call failed with status ${response.status}: ${response.statusText}`);

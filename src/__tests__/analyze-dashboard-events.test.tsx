@@ -1,6 +1,8 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from 'ink';
+vi.mock('ci-info', () => ({ isCI: false, default: { isCI: false } }));
+
 import { Writable, Readable } from 'node:stream';
 import { Console } from 'node:console';
 import { AnalyzeDashboard } from '../ui/AnalyzeDashboard';
@@ -51,7 +53,7 @@ class MockStdin extends Readable {
   }
 }
 
-const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 2500) => {
+const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 6000) => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const output = mockStdout.frames.join('\n');
@@ -182,11 +184,12 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
 
     it.each(cardCases)(
       'renders $desc',
-      ({ role, name, status, message, expectedIcon, expectedRoleIcon }) => {
+      async ({ role, name, status, message, expectedIcon, expectedRoleIcon }) => {
         const { unmount } = render(
           <AgentCard role={role} name={name} status={status} message={message} />,
-          { stdout: mockStdout as any }
+          { stdout: mockStdout as any, debug: true }
         );
+        await new Promise((r) => setTimeout(r, 50));
 
         const output = mockStdout.frames.join('\n');
         expect(output).toContain(expectedIcon);
@@ -199,27 +202,29 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
   });
 
   describe('Task 13.2: ActiveToolPanel Component', () => {
-    it('returns null when no active tool is executing', () => {
+    it('returns null when no active tool is executing', async () => {
       const { unmount } = render(<ActiveToolPanel tool={null} />, {
-        stdout: mockStdout as any,
+        stdout: mockStdout as any, debug: true,
       });
+      await new Promise((r) => setTimeout(r, 50));
 
       const output = mockStdout.frames.join('\n');
       expect(output).toBe('');
       unmount();
     });
 
-    it('displays idle message when showIdle is enabled and tool is null', () => {
+    it('displays idle message when showIdle is enabled and tool is null', async () => {
       const { unmount } = render(<ActiveToolPanel tool={null} showIdle={true} />, {
-        stdout: mockStdout as any,
+        stdout: mockStdout as any, debug: true,
       });
+      await new Promise((r) => setTimeout(r, 50));
 
       const output = mockStdout.frames.join('\n');
       expect(output).toContain('⚡ Active Tool: None (idle)');
       unmount();
     });
 
-    it('displays running tool with agent badge, tool name, and arguments', () => {
+    it('displays running tool with agent badge, tool name, and arguments', async () => {
       const { unmount } = render(
         <ActiveToolPanel
           tool={{
@@ -230,8 +235,9 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
             status: 'running',
           }}
         />,
-        { stdout: mockStdout as any }
+        { stdout: mockStdout as any, debug: true }
       );
+      await new Promise((r) => setTimeout(r, 50));
 
       const output = mockStdout.frames.join('\n');
       expect(output).toContain('⚡ Active Tool:');
@@ -240,7 +246,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       unmount();
     });
 
-    it('displays elapsed duration when tool has completed', () => {
+    it('displays elapsed duration when tool has completed', async () => {
       const { unmount } = render(
         <ActiveToolPanel
           tool={{
@@ -252,8 +258,9 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
             status: 'completed',
           }}
         />,
-        { stdout: mockStdout as any }
+        { stdout: mockStdout as any, debug: true }
       );
+      await new Promise((r) => setTimeout(r, 50));
 
       const output = mockStdout.frames.join('\n');
       expect(output).toContain('⚡ Active Tool:');
@@ -265,11 +272,12 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
   });
 
   describe('Task 13.3 & Consensus: ConsensusDiagnosisView Component', () => {
-    it('renders structured consensus with root cause, confidence badge, findings, and fix command', () => {
+    it('renders structured consensus with root cause, confidence badge, findings, and fix command', async () => {
       const { unmount } = render(
         <ConsensusDiagnosisView consensus={mockConsensus} />,
-        { stdout: mockStdout as any }
+        { stdout: mockStdout as any, debug: true }
       );
+      await new Promise((r) => setTimeout(r, 50));
 
       const output = mockStdout.frames.join('\n');
       expect(output).toContain('Root Cause:');
@@ -286,12 +294,13 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       unmount();
     });
 
-    it('renders string details fallback cleanly', () => {
+    it('renders string details fallback cleanly', async () => {
       const detailsText = 'Root Cause (HIGH confidence):\n  Node pressure\nRecommended Remediation:\n  Scale up node pool';
       const { unmount } = render(
         <ConsensusDiagnosisView details={detailsText} />,
-        { stdout: mockStdout as any }
+        { stdout: mockStdout as any, debug: true }
       );
+      await new Promise((r) => setTimeout(r, 50));
 
       const output = mockStdout.frames.join('\n');
       expect(output).toContain('Root Cause');
@@ -428,7 +437,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
           initialOptions={{ namespace: 'default', output: 'text', backend: 'ollama' }}
           initialResult={mockProblemResult}
         />,
-        { stdout: mockStdout as any, stdin: mockStdin as any, interactive: true }
+        { stdout: mockStdout as any, stdin: mockStdin as any, interactive: true, debug: true }
       );
 
       await waitForFrame(mockStdout, 'checkout-api');

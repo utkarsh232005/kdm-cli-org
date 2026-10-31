@@ -37,6 +37,7 @@ export class AzureOpenAIClient implements AIClient {
         messages: [{ role: 'user', content: prompt }],
         temperature: this.temperature,
       }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) {
       throw new Error(`Azure OpenAI API call failed with status ${response.status}: ${response.statusText}`);

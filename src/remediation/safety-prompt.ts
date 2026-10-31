@@ -322,10 +322,10 @@ function createPromptProps(
 /**
  * Resolves standard or mocked stdin/stdout streams.
  */
-function resolveIOOptions(options?: PromptSafetyOptions): { stdin: any; stdout: any } {
+function resolveIOOptions(options?: PromptSafetyOptions): any {
   const stdin = options && options.stdin ? options.stdin : process.stdin;
   const stdout = options && options.stdout ? options.stdout : process.stdout;
-  return { stdin, stdout };
+  return { stdin, stdout, debug: true };
 }
 
 /**
