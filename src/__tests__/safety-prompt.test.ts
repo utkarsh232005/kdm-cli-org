@@ -1,6 +1,8 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from 'ink';
+vi.mock('ci-info', () => ({ isCI: false, default: { isCI: false } }));
+
 import { Writable, Readable } from 'node:stream';
 import { Console } from 'node:console';
 import {
@@ -52,7 +54,7 @@ const SAMPLE_PROPOSAL: RemediationProposal = {
   diffPreview: '- limits.memory: 256Mi\n+ limits.memory: 512Mi',
 };
 
-const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 5000) => {
+const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 2000) => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     if (mockStdout.output.includes(substring)) {
@@ -91,6 +93,7 @@ async function setupPromptHarness(
     {
       stdout: stdout as any,
       stdin: stdin as any,
+      debug: true,
     }
   );
 
@@ -118,7 +121,7 @@ describe('SafetyPrompt Component & Interactive Safety Gate', () => {
       React.createElement(SafetyPrompt, { proposal: SAMPLE_PROPOSAL }),
       {
         stdout: mockStdout as any,
-        stdin: mockStdin as any,
+        stdin: mockStdin as any, debug: true,
       }
     );
 
@@ -151,7 +154,7 @@ describe('SafetyPrompt Component & Interactive Safety Gate', () => {
       }),
       {
         stdout: mockStdout as any,
-        stdin: mockStdin as any,
+        stdin: mockStdin as any, debug: true,
       }
     );
 
@@ -239,7 +242,7 @@ describe('SafetyPrompt Component & Interactive Safety Gate', () => {
 
   it('promptSafetyConfirmation helper resolves true on "y"', async () => {
     const promise = promptSafetyConfirmation(SAMPLE_PROPOSAL, {
-      stdin: mockStdin as any,
+      stdin: mockStdin as any, debug: true,
       stdout: mockStdout as any,
     });
 
@@ -252,7 +255,7 @@ describe('SafetyPrompt Component & Interactive Safety Gate', () => {
 
   it('promptSafetyConfirmation helper resolves false on Enter', async () => {
     const promise = promptSafetyConfirmation(SAMPLE_PROPOSAL, {
-      stdin: mockStdin as any,
+      stdin: mockStdin as any, debug: true,
       stdout: mockStdout as any,
     });
 
