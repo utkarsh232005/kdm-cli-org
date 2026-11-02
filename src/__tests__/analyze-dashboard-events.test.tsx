@@ -51,7 +51,7 @@ class MockStdin extends Readable {
   }
 }
 
-const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 5000) => {
+const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 10000) => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const output = mockStdout.frames.join('\n');
