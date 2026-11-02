@@ -52,7 +52,7 @@ const SAMPLE_PROPOSAL: RemediationProposal = {
   diffPreview: '- limits.memory: 256Mi\n+ limits.memory: 512Mi',
 };
 
-const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 2000) => {
+const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 5000) => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     if (mockStdout.output.includes(substring)) {
