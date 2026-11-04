@@ -51,6 +51,7 @@ async function runHTTPAnalyzer(
     const response = await fetch(config.url!, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(30000), // Security: Prevents hanging connections
       body: JSON.stringify({ namespace: context.namespace }),
     });
     const data = await response.json();

@@ -25,6 +25,7 @@ const sendDiscordNotification = async (alert: Alert) => {
     await fetch(discord_webhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(10000), // Security: Prevents hanging connections
       body: JSON.stringify({
         embeds: [{
           title: `KDM Alert: ${alert.type.toUpperCase()} Failure`,
