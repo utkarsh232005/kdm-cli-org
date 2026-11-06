@@ -55,7 +55,7 @@ const SAMPLE_PROPOSAL: RemediationProposal = {
 const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout = 2000) => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    if (mockStdout.output.includes(substring)) {
+    if (mockStdout.output.replace(/\x1B\[[0-9;]*m/g, "").includes(substring)) {
       return;
     }
     await sleep(25);

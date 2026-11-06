@@ -55,7 +55,7 @@ const waitForFrame = async (mockStdout: MockStdout, substring: string, timeout =
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const output = mockStdout.frames.join('\n');
-    if (output.includes(substring)) {
+    if (output.replace(/\x1B\[[0-9;]*m/g, "").includes(substring)) {
       return;
     }
     await sleep(20);
@@ -189,10 +189,10 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
         );
 
         const output = mockStdout.frames.join('\n');
-        expect(output).toContain(expectedIcon);
-        expect(output).toContain(expectedRoleIcon);
-        expect(output).toContain(`${name}:`);
-        expect(output).toContain(message);
+        expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain(expectedIcon);
+        expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain(expectedRoleIcon);
+        expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain(`${name}:`);
+        expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain(message);
         unmount();
       }
     );
@@ -215,7 +215,7 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       });
 
       const output = mockStdout.frames.join('\n');
-      expect(output).toContain('⚡ Active Tool: None (idle)');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('⚡ Active Tool: None (idle)');
       unmount();
     });
 
@@ -234,9 +234,9 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       );
 
       const output = mockStdout.frames.join('\n');
-      expect(output).toContain('⚡ Active Tool:');
-      expect(output).toContain('[Config Agent]');
-      expect(output).toContain('get_deployment_spec(checkout-api)');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('⚡ Active Tool:');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('[Config Agent]');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('get_deployment_spec(checkout-api)');
       unmount();
     });
 
@@ -256,10 +256,10 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       );
 
       const output = mockStdout.frames.join('\n');
-      expect(output).toContain('⚡ Active Tool:');
-      expect(output).toContain('[Runtime Agent]');
-      expect(output).toContain('get_container_logs(pod=checkout-api, tail=50)');
-      expect(output).toContain('(42ms)');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('⚡ Active Tool:');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('[Runtime Agent]');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('get_container_logs(pod=checkout-api, tail=50)');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('(42ms)');
       unmount();
     });
   });
@@ -272,17 +272,17 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       );
 
       const output = mockStdout.frames.join('\n');
-      expect(output).toContain('Root Cause:');
-      expect(output).toContain('[HIGH CONFIDENCE]');
-      expect(output).toContain('Detected Exit Code 137 (OOMKilled)');
-      expect(output).toContain('Specialist Agent Findings:');
-      expect(output).toContain('Runtime Agent:');
-      expect(output).toContain('Config Agent:');
-      expect(output).toContain('Recommended Remediation:');
-      expect(output).toContain('[LOW RISK]');
-      expect(output).toContain('Increase container memory limit to 512Mi');
-      expect(output).toContain('Command: kubectl set resources deployment checkout-api --limits=memory=512Mi -n default');
-      expect(output).toContain('Evidence Citations: pod-exit-code-137, memory-limit-256Mi');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Root Cause:');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('[HIGH CONFIDENCE]');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Detected Exit Code 137 (OOMKilled)');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Specialist Agent Findings:');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Runtime Agent:');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Config Agent:');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Recommended Remediation:');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('[LOW RISK]');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Increase container memory limit to 512Mi');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Command: kubectl set resources deployment checkout-api --limits=memory=512Mi -n default');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Evidence Citations: pod-exit-code-137, memory-limit-256Mi');
       unmount();
     });
 
@@ -294,10 +294,10 @@ describe('Phase 13: Live NDJSON Streaming UI Components', () => {
       );
 
       const output = mockStdout.frames.join('\n');
-      expect(output).toContain('Root Cause');
-      expect(output).toContain('Node pressure');
-      expect(output).toContain('Recommended Remediation:');
-      expect(output).toContain('Scale up node pool');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Root Cause');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Node pressure');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Recommended Remediation:');
+      expect(output.replace(/\x1B\[[0-9;]*m/g, "")).toContain('Scale up node pool');
       unmount();
     });
   });
