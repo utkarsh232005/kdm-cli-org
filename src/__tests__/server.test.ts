@@ -14,6 +14,11 @@ vi.mock('../config/store', () => ({
         { name: 'openai', model: 'gpt-4', password: 'secret-password' },
       ],
     },
+    notifications: {
+      service: 'discord',
+      discordWebhook: 'super-secret-webhook',
+      emailPassword: 'super-secret-password',
+    }
   })),
 }));
 
@@ -62,6 +67,8 @@ describe('HTTP Server', () => {
     expect(response.status).toBe(200);
     const body = await response.json() as any;
     expect(body.ai.providers[0].password).toBe('****');
+    expect(body.notifications.discordWebhook).toBe('****');
+    expect(body.notifications.emailPassword).toBe('****');
   });
 
   it('handles GET /config errors gracefully', async () => {
