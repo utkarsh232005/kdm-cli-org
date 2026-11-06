@@ -105,6 +105,11 @@ export const handleConfig = (res: any): void => {
         ...config.ai,
         providers: config.ai.providers.map((p) => ({ ...p, password: '****' })),
       } : undefined,
+      notifications: config.notifications ? {
+        ...config.notifications,
+        ...(config.notifications.discordWebhook ? { discordWebhook: '****' } : {}),
+        ...(config.notifications.emailPassword ? { emailPassword: '****' } : {}),
+      } : undefined,
     };
     sendJson(res, 200, sanitized);
   } catch (error) {
